@@ -7,7 +7,11 @@ library(shiny)
 library(dplyr)
 library(ggplot2)
 
-allData <- read.csv("C:\\ShinyR_tutorial\\study1\\AllData(RA2).csv", header = TRUE)
+# make file location the wd
+#this.dir <- dirname(parent.frame(2)$ofile)
+#setwd(this.dir)
+
+allData <- read.csv("C:\\GitHubRepos\\CCII_ShinyApp\\AllData(RA2).csv", header = TRUE)
 
 ui <- fluidPage(
   headerPanel('RA2 CCII Arable crop'),
@@ -22,7 +26,12 @@ ui <- fluidPage(
       min = 1, max = 9)
   ),
   mainPanel(
-    plotOutput('plot1')
+  #  plotOutput('plot1')
+    tabsetPanel(
+      tabPanel("Plot results", plotOutput("plot1")),
+      tabPanel("Map analysis", verbatimTextOutput("summary")),
+      tabPanel("Tables", tableOutput("table"))
+    )
   )
 )
 
@@ -55,7 +64,7 @@ server <- function(input, output) {
          col = clusters()$cluster,
          pch = 20, cex = 3)
     points(clusters()$centers, pch = 4, cex = 4, lwd = 4) 
-    
+
     })
 
 }
