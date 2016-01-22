@@ -16,7 +16,7 @@ allData <- read.csv("C:\\GitHubRepos\\CCII_ShinyApp\\AllData(RA2).csv", header =
 ui <- fluidPage(
   headerPanel('RA2 CCII Arable crop'),
   sidebarPanel(
-    selectInput('scn', 'Select the crop', as.character(unique(allData$thisScenario))),
+    selectInput('scn', 'Select the scenario', as.character(unique(allData$thisScenario))),
     selectInput('crop', 'Select the crop', as.character(unique(allData$CurrentCrop))),
     selectInput('soil', 'Select the soil', as.character(unique(allData$thisSoil))),
     selectInput('xcol', 'Select X Variable', names(allData)),
@@ -28,7 +28,7 @@ ui <- fluidPage(
   mainPanel(
   #  plotOutput('plot1')
     tabsetPanel(
-      tabPanel("Plot results", plotOutput("plot1")),
+      tabPanel("Plot results", plotOutput("plot1"), plotOutput("plot2")),
       tabPanel("Map analysis", verbatimTextOutput("summary")),
       tabPanel("Tables", tableOutput("table"))
     )
@@ -64,8 +64,22 @@ server <- function(input, output) {
          col = clusters()$cluster,
          pch = 20, cex = 3)
     points(clusters()$centers, pch = 4, cex = 4, lwd = 4) 
+    
 
     })
+  
+  
+  output$plot2 <- renderPlot({
+    par(mar = c(5.1, 4.1, 0, 1))
+    plot(selectedData(),
+         col = clusters()$cluster,
+         pch = 20, cex = 3)
+    points(clusters()$centers, pch = 4, cex = 4, lwd = 4) 
+    
+    
+  })
+  
+  
 
 }
 
