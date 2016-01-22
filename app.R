@@ -32,6 +32,7 @@ ui <- fluidPage(
       tabPanel("Map analysis", verbatimTextOutput("summary")),
       tabPanel("Tables", tableOutput("table"))
     )
+    
   )
 )
 
@@ -47,20 +48,45 @@ server <- function(input, output) {
     allData <- allData %>%
       filter( CurrentCrop == crop & 
                 thisSoil == soil  &
-               thisScenario == scn
+               thisScenario == "base"
               )
     
     
     allData[, c(input$xcol, input$ycol)]
   })
+  
+  # fut
+  selectedDataFut <- reactive({
+    
+    # Due to dplyr issue #318, we need temp variables for input values
+    crop <- input$crop
+    soil <- input$soil
+    scn <- input$scn
+    
+    allData <- allData %>%
+      filter( CurrentCrop == crop & 
+                thisSoil == soil  &
+                thisScenario == "fut1"
+      )
+    
+    
+    allData[, c(input$xcol, input$ycol)]
+  })
+  
 
   clusters <- reactive({
     kmeans(selectedData(), input$clusters)
   })
+  
+  clustersFut <- reactive({
+    kmeans(selectedDataFut(), input$clusters)
+  })
 
+  # first graph
   output$plot1 <- renderPlot({
     par(mar = c(5.1, 4.1, 0, 1))
     plot(selectedData(),
+         main="Baseline",
          col = clusters()$cluster,
          pch = 20, cex = 3)
     points(clusters()$centers, pch = 4, cex = 4, lwd = 4) 
@@ -68,13 +94,14 @@ server <- function(input, output) {
 
     })
   
-  
+  # second graph
   output$plot2 <- renderPlot({
     par(mar = c(5.1, 4.1, 0, 1))
-    plot(selectedData(),
-         col = clusters()$cluster,
+    plot(selectedDataFut(),
+         main="Future",
+         col = clustersFut()$cluster,
          pch = 20, cex = 3)
-    points(clusters()$centers, pch = 4, cex = 4, lwd = 4) 
+    points(clustersFut()$centers, pch = 4, cex = 4, lwd = 4) 
     
     
   })
