@@ -7,18 +7,21 @@ library(shiny)
 library(dplyr)
 library(ggplot2)
 
-# make file location the wd
-#this.dir <- dirname(parent.frame(2)$ofile)
-#setwd(this.dir)
-
 allData <- read.csv("C:\\GitHubRepos\\CCII_ShinyApp\\AllData(RA2).csv", header = TRUE)
+
+allData <- allData %>%
+  mutate(Lat_Long = paste0(thisLat,"_",thisLong))
+
+#-------------THE UI ------------------------------------------------
+
 
 ui <- fluidPage(
   headerPanel('RA2 CCII Arable crop'),
   sidebarPanel(
-    selectInput('scn', 'Select the scenario', as.character(unique(allData$thisScenario))),
-    selectInput('crop', 'Select the crop', as.character(unique(allData$CurrentCrop))),
-    selectInput('soil', 'Select the soil', as.character(unique(allData$thisSoil))),
+    selectInput('gc', 'Grid cell', as.character(unique(allData$Lat_Long))),
+    selectInput('scn', 'Climate cenario', as.character(unique(allData$thisScenario))),
+    selectInput('crop', 'Crop type', as.character(unique(allData$CurrentCrop))),
+    selectInput('soil', 'Soil water holding capacity', as.character(unique(allData$thisSoil))),
     selectInput('xcol', 'Select X Variable', names(allData)),
     selectInput('ycol', 'Select Y Variable', names(allData),
       selected = names(allData)[[12]]),
@@ -28,25 +31,34 @@ ui <- fluidPage(
   mainPanel(
   #  plotOutput('plot1')
     tabsetPanel(
-      tabPanel("Plot results", plotOutput("plot1"), plotOutput("plot2")),
-      tabPanel("Map analysis", verbatimTextOutput("summary")),
-      tabPanel("Tables", tableOutput("table"))
+      tabPanel("Region analysis", plotOutput("plot1"), plotOutput("plot2")),
+      
+      tabPanel("Spatial analysis", verbatimTextOutput("summary"), textOutput("text1")),
+      
+      tabPanel("Location analysis", 
+               selectInput('gc', 'Grid cell', as.character(unique(allData$Lat_Long))),
+               tableOutput("table"))
     )
     
   )
 )
+
+#-------------------------- THE SERVER -----------------------------------------------------
+
 
 server <- function(input, output) {
 
   selectedData <- reactive({
     
     # Due to dplyr issue #318, we need temp variables for input values
+    gc <- input$gc
     crop <- input$crop
     soil <- input$soil
     scn <- input$scn
     
     allData <- allData %>%
-      filter( CurrentCrop == crop & 
+      filter(  Lat_Long == gc &
+                 CurrentCrop == crop & 
                 thisSoil == soil  &
                thisScenario == "base"
               )
@@ -59,12 +71,14 @@ server <- function(input, output) {
   selectedDataFut <- reactive({
     
     # Due to dplyr issue #318, we need temp variables for input values
+    gc <- input$gc
     crop <- input$crop
     soil <- input$soil
     scn <- input$scn
     
     allData <- allData %>%
-      filter( CurrentCrop == crop & 
+      filter( Lat_Long == gc &
+              CurrentCrop == crop & 
                 thisSoil == soil  &
                 thisScenario == "fut1"
       )
@@ -80,6 +94,12 @@ server <- function(input, output) {
   
   clustersFut <- reactive({
     kmeans(selectedDataFut(), input$clusters)
+  })
+  
+  meanValue <- reactive({
+    
+    mean(selectedDataFut())
+    
   })
 
   # first graph
@@ -106,8 +126,12 @@ server <- function(input, output) {
     
   })
   
+  # means
+  output$text1 <- renderText({ 
+    "Mean value is: "
+  })
   
-
+  
 }
 
 shinyApp(ui = ui, server = server)
