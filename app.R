@@ -7,11 +7,15 @@ library(shiny)
 library(dplyr)
 library(ggplot2)
 library(leaflet)
+library(raster)
+#install.packages('raster', repos = 'http://r-forge.r-project.org/', type = 'source')
 
 allData <- read.csv("C:\\GitHubRepos\\CCII_ShinyApp\\AllData(RA2).csv", header = TRUE)
 
 allData <- allData %>%
   mutate(Lat_Long = paste0(thisLat,"_",thisLong), FUE = TotalBiomass/PTfert)
+
+r <- raster("C:\\apsim_dev\\Projects\\CCII\\GIS_layers\\CaseStudy\\Filter_ArableKaituna.tif")
 
 #-------------THE UI ------------------------------------------------
 
@@ -196,13 +200,14 @@ server <- function(input, output) {
   
   # map points FIXME: Adding this crahes the data selection
   points_map <- eventReactive(input$recalc, {
-    cbind(rnorm(10) * 2 + 176, rnorm(10) + -38)
+    cbind(rnorm(10) * 2 + 176, rnorm(10) + -38) # random coordinates: Use the selected coordinates
   }, ignoreNULL = FALSE)
   
   output$mymap <- renderLeaflet({
     leaflet() %>%
       setView(lng = 176.272, lat = -38.0, zoom = 8) %>%
       addTiles() %>%
+      addRasterImage(r, opacity = 0.8) %>%
       #addProviderTiles("OpenTopoMap", options = providerTileOptions(noWrap = TRUE)) %>%
       addMarkers(data = points_map())
   })
