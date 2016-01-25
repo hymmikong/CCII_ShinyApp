@@ -196,14 +196,14 @@ server <- function(input, output) {
   
   # map points FIXME: Adding this crahes the data selection
   points_map <- eventReactive(input$recalc, {
-    cbind(rnorm(40) * 2 + 13, rnorm(40) + 48)
+    cbind(rnorm(10) * 2 + 176, rnorm(10) + -38)
   }, ignoreNULL = FALSE)
   
   output$mymap <- renderLeaflet({
     leaflet() %>%
-      setView(lng = 176.272, lat = -37.725, zoom = 12) %>%
-    #  addTiles() %>%
-      addProviderTiles("OpenTopoMap", options = providerTileOptions(noWrap = TRUE)) %>%
+      setView(lng = 176.272, lat = -38.0, zoom = 8) %>%
+      addTiles() %>%
+      #addProviderTiles("OpenTopoMap", options = providerTileOptions(noWrap = TRUE)) %>%
       addMarkers(data = points_map())
   })
   
