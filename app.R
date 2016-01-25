@@ -6,6 +6,7 @@ palette(c("#E41A1C", "#377EB8", "#4DAF4A", "#984EA3",
 library(shiny)
 library(dplyr)
 library(ggplot2)
+library(leaflet)
 
 allData <- read.csv("C:\\GitHubRepos\\CCII_ShinyApp\\AllData(RA2).csv", header = TRUE)
 
@@ -16,7 +17,9 @@ allData <- allData %>%
 
 
 ui <- fluidPage(
+  
   headerPanel('RA2 CCII Arable crop'),
+  
   sidebarPanel(
    # selectInput('gc', 'Grid cell', as.character(unique(allData$Lat_Long))),
     selectInput('scn', 'Climate cenario', as.character(unique(allData$thisScenario))),
@@ -28,10 +31,13 @@ ui <- fluidPage(
     numericInput('clusters', 'Cluster count', 3,
       min = 1, max = 9)
   ),
+  
   mainPanel(
   
     tabsetPanel(
-      tabPanel("Region analysis", plotOutput("plot1"), plotOutput("plot2")),
+      
+      tabPanel("Region analysis", plotOutput("plot1"), plotOutput("plot2")
+               ),
       
     
       tabPanel("Location analysis", 
@@ -39,11 +45,15 @@ ui <- fluidPage(
                tableOutput("table"), 
                plotOutput("plot3"),
                plotOutput("plot4")
-               
                ),
       
-      tabPanel("Spatial analysis", verbatimTextOutput("summary"), textOutput("text1"))
-      
+      tabPanel("Spatial analysis", 
+               verbatimTextOutput("summary"), 
+               textOutput("text1"),
+               leafletOutput("mymap"),
+               p(),
+               actionButton("recalc", "New points")
+               )
     )
     
   )
@@ -182,6 +192,19 @@ server <- function(input, output) {
   # means
   output$text1 <- renderText({ 
     "Mean value is: "
+  })
+  
+  # map points FIXME: Adding this crahes the data selection
+  points_map <- eventReactive(input$recalc, {
+    cbind(rnorm(40) * 2 + 13, rnorm(40) + 48)
+  }, ignoreNULL = FALSE)
+  
+  output$mymap <- renderLeaflet({
+    leaflet() %>%
+      setView(lng = 176.272, lat = -37.725, zoom = 12) %>%
+    #  addTiles() %>%
+      addProviderTiles("OpenTopoMap", options = providerTileOptions(noWrap = TRUE)) %>%
+      addMarkers(data = points_map())
   })
   
   
