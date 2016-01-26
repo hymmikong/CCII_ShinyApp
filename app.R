@@ -66,7 +66,14 @@ ui <- fluidPage(
       tabPanel("Spatial analysis", 
                verbatimTextOutput("summary"), 
                textOutput("text1"),
-               leafletOutput("mymap"),
+               radioButtons("statOut", "Statistics to output:",
+                            inline = TRUE,
+                            c("Average" = "av",
+                              "Median" = "med",
+                              "Coefficient of Variation" = "cv",
+                              "Standard Deviation" = "sd")),
+               leafletOutput("basemap"),
+             #  leafletOutput("map_result"), # this becomes a new map, so all has to be fit in the basemap for overlay?
                p(),
                actionButton("recalc", "New points"),
                sliderInput("slider1", 
@@ -74,6 +81,7 @@ ui <- fluidPage(
                            min = 0, max = 1, value = 0.5),
                actionButton("mapUpdateButton", "Update Maps"),
                tableOutput("table1"),
+
                uiOutput("ggvis_ui"), # FIXME: trying to do transparency in slide
                ggvisOutput("ggvis")
                )
@@ -230,7 +238,7 @@ server <- function(input, output) {
     cbind(rnorm(10) * 2 + 176, rnorm(10) + -38) # random coordinates: Use the selected coordinates
   }, ignoreNULL = FALSE)
   
-  output$mymap <- renderLeaflet({
+  output$basemap <- renderLeaflet({
     leaflet() %>%
       setView(lng = 176.272, lat = -38.0, zoom = 8) %>%
       addTiles() %>%
@@ -248,37 +256,30 @@ server <- function(input, output) {
   # Update button
   newRaster <- eventReactive(input$mapUpdateButton, {
     
-    crop <- input$crop
-    soil <- input$soil
-    scn <- input$scn
-    
-    allData <- allData %>%
-      filter(CurrentCrop == crop & 
-          thisSoil == soil  &
-          thisScenario == "base"
-      )
-    
-    
-   # allData[, c(CurrentCrop, thisSoil, thisScenario, thisLat, thisLong, input$xcol, input$ycol)]
-    allData[, c(input$xcol, input$ycol)]
-    
-  # trim to lat/long/value
-    
-    
-  # rasterise the df
-    
+ # Update the rasyter
     
   })
   
+  # Print table of data to be resterised
   output$table1 <- renderTable({
  
-    c1 <- match(input$ycol, names(allData))
-    
+    varToRaster <- match(input$ycol, names(allData))
     
     allData %>%
-    dplyr::select(thisLat, thisLong, c1) %>% # FIXME: need a way to select the columns to rasterise
-     head()
+    dplyr::select(thisLat, thisLong, varToRaster) %>%
+    head()
   })
+  
+  # Create raster image
+  output$map_result <- renderLeaflet({
+    
+    varToRaster <- match(input$ycol, names(allData))
+    
+    allData %>%
+      dplyr::select(thisLat, thisLong, varToRaster) %>%
+      head()
+  })
+  
 
 }
 
