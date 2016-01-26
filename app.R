@@ -8,6 +8,11 @@ library(dplyr)
 library(ggplot2)
 library(leaflet)
 library(raster)
+library(ggvis)
+library(maptools)
+library(rgeos)
+library(maps)
+library(rgdal)
 #install.packages('raster', repos = 'http://r-forge.r-project.org/', type = 'source')
 
 allData <- read.csv("C:\\GitHubRepos\\CCII_ShinyApp\\AllData(RA2).csv", header = TRUE)
@@ -16,6 +21,13 @@ allData <- allData %>%
   mutate(Lat_Long = paste0(thisLat,"_",thisLong), FUE = TotalBiomass/PTfert)
 
 r <- raster("C:\\apsim_dev\\Projects\\CCII\\GIS_layers\\CaseStudy\\Filter_ArableKaituna.tif")
+
+# add 'Kaituna' catchment 
+pathShapeFile <- 'C:/apsim_dev/Projects/CCII/GIS_layers/CaseStudy/lowerKaitunabnd(WGS84).shp'
+sf2 <- readShapeSpatial(pathShapeFile, proj4string = CRS("+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"))
+#sf2 <- readOGR("C:/apsim_dev/Projects/CCII/GIS_layers/CaseStudy","lowerKaitunabnd(WGS84)")
+sf2 <- gSimplify(sf2,tol=.01,topologyPreserve = TRUE)
+#plot(sf2, bg="transparent", xlim=c(167.2,178.55),main = "name")
 
 #-------------THE UI ------------------------------------------------
 
@@ -29,8 +41,8 @@ ui <- fluidPage(
     selectInput('scn', 'Climate cenario', as.character(unique(allData$thisScenario))),
     selectInput('crop', 'Crop type', as.character(unique(allData$CurrentCrop))),
     selectInput('soil', 'Soil water holding capacity', as.character(unique(allData$thisSoil))),
-    selectInput('xcol', 'Select X Variable', names(allData)),
-    selectInput('ycol', 'Select Y Variable', names(allData),
+    selectInput('xcol', 'Select driving variable (X in graph)', names(allData)),
+    selectInput('ycol', 'Select response variable (Y in graph and in the maps)', names(allData),
       selected = names(allData)[[12]]),
     numericInput('clusters', 'Cluster count', 3,
       min = 1, max = 9)
@@ -56,7 +68,14 @@ ui <- fluidPage(
                textOutput("text1"),
                leafletOutput("mymap"),
                p(),
-               actionButton("recalc", "New points")
+               actionButton("recalc", "New points"),
+               sliderInput("slider1", 
+                           label = h4("Raster transparency"), 
+                           min = 0, max = 1, value = 0.5),
+               actionButton("mapUpdateButton", "Update Maps"),
+               tableOutput("table1"),
+               uiOutput("ggvis_ui"), # FIXME: trying to do transparency in slide
+               ggvisOutput("ggvis")
                )
     )
     
@@ -195,10 +214,18 @@ server <- function(input, output) {
   
   # means
   output$text1 <- renderText({ 
-    "Mean value is: "
+    "Analyse raster outputs "
   })
   
   # map points FIXME: Adding this crahes the data selection
+  # FIXME: not being able to pass slider transparency as argument 
+ # sliderValue <- observe({input$slider1})
+ 
+  pal <- colorNumeric(c("#CD3333", "#FF8C00","#458B00"), values(r),
+                      na.color = "transparent")
+  sliderValue <- 0.5
+  
+  # Set location of points in NZ
   points_map <- eventReactive(input$recalc, {
     cbind(rnorm(10) * 2 + 176, rnorm(10) + -38) # random coordinates: Use the selected coordinates
   }, ignoreNULL = FALSE)
@@ -207,12 +234,52 @@ server <- function(input, output) {
     leaflet() %>%
       setView(lng = 176.272, lat = -38.0, zoom = 8) %>%
       addTiles() %>%
-      addRasterImage(r, opacity = 0.8) %>%
+    # addPolygons(sf2, lng = 176.272, lat = -38.0, fill = TRUE) %>%
+  #    addCircles(lng = 176.272, lat = -38.0, radius = 50,fillOpacity = 0.2) %>%
+      addRectangles(176, -38.25, 176.53, -37.67,fillOpacity = 0.05) %>%
+    #  addRasterImage(r, colors = pal, opacity = input_slider(0, 1, value = 0.5, map=sliderValue)) %>%
+      addRasterImage(r, colors = pal, opacity = sliderValue) %>%
+      addLegend(pal = pal, values = values(r), title = "The legend") %>%
+     # bind_shiny("ggvis", "ggvis_ui") %>%
       #addProviderTiles("OpenTopoMap", options = providerTileOptions(noWrap = TRUE)) %>%
       addMarkers(data = points_map())
   })
   
+  # Update button
+  newRaster <- eventReactive(input$mapUpdateButton, {
+    
+    crop <- input$crop
+    soil <- input$soil
+    scn <- input$scn
+    
+    allData <- allData %>%
+      filter(CurrentCrop == crop & 
+          thisSoil == soil  &
+          thisScenario == "base"
+      )
+    
+    
+   # allData[, c(CurrentCrop, thisSoil, thisScenario, thisLat, thisLong, input$xcol, input$ycol)]
+    allData[, c(input$xcol, input$ycol)]
+    
+  # trim to lat/long/value
+    
+    
+  # rasterise the df
+    
+    
+  })
   
+  output$table1 <- renderTable({
+ 
+    c1 <- match(input$ycol, names(allData))
+    
+    
+    allData %>%
+    dplyr::select(thisLat, thisLong, c1) %>% # FIXME: need a way to select the columns to rasterise
+     head()
+  })
+
 }
 
 shinyApp(ui = ui, server = server)
