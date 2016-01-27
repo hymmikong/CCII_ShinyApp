@@ -39,23 +39,31 @@ ui <- fluidPage(
   sidebarPanel(width = 2,
     selectInput('mainvar', 'Select the output variable:', names(allData)),
     
-    radioButtons("stats", "Statistics for outputs:",
+    tags$hr(),
+    h4(tags$b("Calculation details")),
+    radioButtons("stats", "Statistics:",
                  inline = TRUE,
-                 c("Average" = "av",
-                   "Median" = "med",
-                   "Coefficient of Variation" = "cv",
-                   "Standard Deviation" = "sd")),
+                 c("Average" = "av","CV (%)" = "cv")),
+    
+    radioButtons("diff", "Comparison method:",
+                 inline = TRUE,
+                 c("Absolute" = "abs","Relative" = "rel")),
    
-    h3("Reference scenario"),
-    selectInput('scn', 'Climate cenario', as.character(unique(allData$thisScenario))),
-    selectInput('crop', 'Crop type', as.character(unique(allData$CurrentCrop))),
-    selectInput('soil', 'Soil water holding capacity', as.character(unique(allData$thisSoil))),
+    tags$hr(),
+   h4(tags$b("Refence scenario")),
+    selectInput('scn', 'Climate scenario 1', as.character(unique(allData$thisScenario))),
+    selectInput('crop', 'Crop type 1', as.character(unique(allData$CurrentCrop))),
+    selectInput('soil', 'Soil type 1', as.character(unique(allData$thisSoil))),
+    
+    tags$hr(),
+    h4(tags$b("Alternative scenario")),
+    selectInput('scn2', 'Climate scenario 2', as.character(unique(allData$thisScenario))),
+    selectInput('crop2', 'Crop type 2 ', as.character(unique(allData$CurrentCrop))),
+    selectInput('soil2', 'Soil type 2', as.character(unique(allData$thisSoil))),
+    
+    tags$hr(),
+    h4(tags$b("Graphing")),
 
-    h3("Alternative scenario"),
-    selectInput('scn2', 'Climate cenario', as.character(unique(allData$thisScenario))),
-    selectInput('crop2', 'Crop type', as.character(unique(allData$CurrentCrop))),
-    selectInput('soil2', 'Soil water holding capacity', as.character(unique(allData$thisSoil))),
-    h3("Graphing comparison"),
     selectInput('xcol', 'Select driving variable (X in graph)', names(allData)),
     selectInput('ycol', 'Select response variable (Y in graph and in the maps)', names(allData),
       selected = names(allData)[[12]]),
@@ -67,17 +75,7 @@ ui <- fluidPage(
   
     tabsetPanel(
       
-      tabPanel("Region analysis", plotOutput("plot1"), plotOutput("plot2")
-               ),
-      
-    
-      tabPanel("Location analysis", 
-               selectInput('gc', 'Grid cell', as.character(unique(allData$Lat_Long))),
-               tableOutput("table"), 
-               plotOutput("plot3"),
-               plotOutput("plot4")
-               ),
-      
+      # tab 1
       tabPanel("Spatial analysis", 
                verbatimTextOutput("summary"), 
                textOutput("text1"),
@@ -88,7 +86,7 @@ ui <- fluidPage(
                               "Coefficient of Variation" = "cv",
                               "Standard Deviation" = "sd")),
                leafletOutput("basemap"),
-             #  leafletOutput("map_result"), # this becomes a new map, so all has to be fit in the basemap for overlay?
+               #  leafletOutput("map_result"), # this becomes a new map, so all has to be fit in the basemap for overlay?
                p(),
                actionButton("recalc", "New points"),
                sliderInput("slider1", 
@@ -96,10 +94,24 @@ ui <- fluidPage(
                            min = 0, max = 1, value = 0.5),
                actionButton("mapUpdateButton", "Update Maps"),
                tableOutput("table1"),
-
+               
                uiOutput("ggvis_ui"), # FIXME: trying to do transparency in slide
                ggvisOutput("ggvis")
+      ),
+      
+      
+      # tab 2
+      tabPanel("Region analysis", plotOutput("plot1"), plotOutput("plot2")
+               ),
+      
+      # tab 3
+      tabPanel("Location analysis", 
+               selectInput('gc', 'Grid cell', as.character(unique(allData$Lat_Long))),
+               tableOutput("table"), 
+               plotOutput("plot3"),
+               plotOutput("plot4")
                )
+      
     )
     
   )
