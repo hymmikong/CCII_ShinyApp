@@ -388,6 +388,11 @@ server <- function(input, output) {
   # Table raster1
   output$table1 <- renderTable({
  
+    clickStats <- input$stats
+    clickComp <- input$comp
+    
+  keepVar <- as.numeric(ifelse(clickStats == "av", 3, 4))
+    
     varToRaster <- match(input$mainvar, names(allData))
     
    df <- dataRaster1()
@@ -396,12 +401,18 @@ server <- function(input, output) {
     dplyr::select(thisLat, thisLong, varToRaster) %>%
       group_by(thisLat, thisLong) %>%
       summarise_each(funs(mean,cvFunc)) %>%
-      mutate(click1 = input$stats,click2 = input$comp) %>%    
+      dplyr::select(thisLat, thisLong, keepVar) %>%
+   #   mutate(click1 = input$stats,click2 = input$comp) %>%    
       head(50)
   })
   
   # Table raster2
   output$table2 <- renderTable({
+    
+    clickStats <- input$stats
+    clickComp <- input$comp
+    
+    keepVar <- as.numeric(ifelse(clickStats == "av", 3, 4))
     
     varToRaster <- match(input$mainvar, names(allData))
     
@@ -411,7 +422,8 @@ server <- function(input, output) {
       dplyr::select(thisLat, thisLong, varToRaster) %>%
       group_by(thisLat, thisLong) %>%
       summarise_each(funs(mean,cvFunc)) %>%
-      mutate(click1 = input$stats,click2 = input$comp) %>%
+      dplyr::select(thisLat, thisLong, keepVar) %>%
+   #   mutate(click1 = input$stats,click2 = input$comp) %>%
       head(50)
   })
   
