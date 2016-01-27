@@ -3,6 +3,8 @@
 palette(c("#E41A1C", "#377EB8", "#4DAF4A", "#984EA3",
   "#FF7F00", "#FFFF33", "#A65628", "#F781BF", "#999999"))
 
+
+# load libraries (FIXME: delete the ones not used anymore)
 library(shiny)
 library(dplyr)
 library(ggplot2)
@@ -13,17 +15,17 @@ library(maptools)
 library(rgeos)
 library(maps)
 library(rgdal)
-#install.packages('raster', repos = 'http://r-forge.r-project.org/', type = 'source')
+#install.packages('raster', repos = 'http://r-forge.r-project.org/', type = 'source') # using new raster lib
 
 
-# load raw dataframe
-allData <- read.csv("C:\\GitHubRepos\\CCII_ShinyApp\\AllData(RA2).csv", header = TRUE)
+# load raw data
+allData <- read.csv("C:\\GitHubRepos\\CCII_ShinyApp\\data\\AllData(RA2).csv", header = TRUE)
 
 # Costomise data
 allData <- allData %>%
   mutate(Lat_Long = paste0(thisLat,"_",thisLong), FUE = TotalBiomass/PTfert)
 
-# toad support rasters
+# load support rasters (FIXME: delete this after if not needed - for testing now)
 r <- raster("C:\\apsim_dev\\Projects\\CCII\\GIS_layers\\CaseStudy\\Filter_ArableKaituna.tif")
 
 # Load polygon maps for 'Kaituna' catchment (FIX<E: Not working) 
@@ -104,8 +106,8 @@ ui <- fluidPage(
                            min = 0, max = 1, value = 0.5),
                p(),
                tableOutput("table1"),
-               tableOutput("table2"),
-               
+             tableOutput("table2"),
+             leafletOutput("map_result"),
                uiOutput("ggvis_ui"), # FIXME: trying to do transparency in slide
                ggvisOutput("ggvis")
       ),
@@ -128,10 +130,14 @@ ui <- fluidPage(
   )
 )
 
+
 #-------------------------- THE SERVER -----------------------------------------------------
 
-
+# shinyServer(function(input, output) { # why some examples use this syntaxe instead?
 server <- function(input, output) {
+  
+  # set up user specific variables (run ONCE when loading or re-freshing)
+  # FIXME: any variable to add at this level?
   
   # reactive expression to filter data of BASE raster
   dataRaster1 <- reactive({
@@ -142,10 +148,10 @@ server <- function(input, output) {
     
     allData <- allData %>%
       filter(CurrentCrop == crop & 
-          thisSoil == soil  &
-          thisScenario == scn
+               thisSoil == soil  &
+               thisScenario == scn
       )
-  #  allData[,input$mainvar]
+    #  allData[,input$mainvar]
     allData
   })
     
@@ -300,15 +306,45 @@ server <- function(input, output) {
   # FIXME: not being able to pass slider transparency as argument 
  # sliderValue <- observe({input$slider1})
  
-  pal <- colorNumeric(c("#CD3333", "#FF8C00","#458B00"), values(r),
-                      na.color = "transparent")
-  sliderValue <- 0.5
+
   
   # Set location of points in NZ
   points_map <- eventReactive(input$recalc, {
     cbind(rnorm(10) * 2 + 176, rnorm(10) + -38) # random coordinates: Use the selected coordinates
   }, ignoreNULL = FALSE)
   
+  
+  
+  # Create raster image
+  
+  theRaster <- eventReactive(input$mapUpdateButton, {
+    
+    # create data-frame
+    varToRaster <- match(input$mainvar, names(allData))
+    
+    df <- dataRaster1()
+    
+    df <- df %>%
+      dplyr::select(thisLat, thisLong, varToRaster) %>%
+      group_by(thisLat, thisLong) %>%
+      mutate(varToRaster = mean(varToRaster))
+    
+    # rasterise
+    spg <- data.frame(df$thisLong, df$thisLat, df[3])
+    coordinates(spg) <- ~ df.thisLong + df.thisLat # Attention to variable names
+    gridded(spg) <- TRUE
+    rast <- raster(spg)
+    proj4string(rast) <- "+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"
+    rast
+  })
+  
+  
+  # get map arguments
+  pal <- colorNumeric(c("#CD3333", "#FF8C00","#458B00"), values(r),
+                      na.color = "transparent")
+  sliderValue <- 0.5
+  
+  # create main map
   output$basemap <- renderLeaflet({
     leaflet() %>%
       setView(lng = 176.272, lat = -38.0, zoom = 8) %>%
@@ -318,6 +354,7 @@ server <- function(input, output) {
       addRectangles(176, -38.25, 176.53, -37.67,fillOpacity = 0.05) %>%
     #  addRasterImage(r, colors = pal, opacity = input_slider(0, 1, value = 0.5, map=sliderValue)) %>%
       addRasterImage(r, colors = pal, opacity = sliderValue) %>%
+     # addRasterImage(theRaster(), colors = pal, opacity = sliderValue) %>%
       addLegend(pal = pal, values = values(r), title = "The legend") %>%
      # bind_shiny("ggvis", "ggvis_ui") %>%
       #addProviderTiles("OpenTopoMap", options = providerTileOptions(noWrap = TRUE)) %>%
@@ -331,45 +368,32 @@ server <- function(input, output) {
     
   })
   
-  # Print table of data to be resterised
+  # Print tables of data to be resterised
+  
+  # Table raster1
   output$table1 <- renderTable({
  
     varToRaster <- match(input$mainvar, names(allData))
-   # varToRaster <- match(input$mainvar, names(allData))
     
    df <- dataRaster1()
     
- #   allData %>%
     df %>%
     dplyr::select(thisLat, thisLong, varToRaster) %>%
     head()
   })
   
-  
+  # Table raster2
   output$table2 <- renderTable({
     
     varToRaster <- match(input$mainvar, names(allData))
-    # varToRaster <- match(input$mainvar, names(allData))
     
     df <- dataRaster2()
     
-    #   allData %>%
     df %>%
       dplyr::select(thisLat, thisLong, varToRaster) %>%
       head()
   })
   
-  # Create raster image
-  output$map_result <- renderLeaflet({
-    
-    varToRaster <- match(input$mainvar, names(allData))
-    
-    allData %>%
-      dplyr::select(thisLat, thisLong, varToRaster) %>%
-      head()
-  })
-  
-
 }
 
 shinyApp(ui = ui, server = server)
