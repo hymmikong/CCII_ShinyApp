@@ -36,11 +36,26 @@ ui <- fluidPage(
   
   headerPanel('RA2 CCII Arable crop'),
   
-  sidebarPanel(
-   # selectInput('gc', 'Grid cell', as.character(unique(allData$Lat_Long))),
+  sidebarPanel(width = 2,
+    selectInput('mainvar', 'Select the output variable:', names(allData)),
+    
+    radioButtons("stats", "Statistics for outputs:",
+                 inline = TRUE,
+                 c("Average" = "av",
+                   "Median" = "med",
+                   "Coefficient of Variation" = "cv",
+                   "Standard Deviation" = "sd")),
+   
+    h3("Reference scenario"),
     selectInput('scn', 'Climate cenario', as.character(unique(allData$thisScenario))),
     selectInput('crop', 'Crop type', as.character(unique(allData$CurrentCrop))),
     selectInput('soil', 'Soil water holding capacity', as.character(unique(allData$thisSoil))),
+
+    h3("Alternative scenario"),
+    selectInput('scn2', 'Climate cenario', as.character(unique(allData$thisScenario))),
+    selectInput('crop2', 'Crop type', as.character(unique(allData$CurrentCrop))),
+    selectInput('soil2', 'Soil water holding capacity', as.character(unique(allData$thisSoil))),
+    h3("Graphing comparison"),
     selectInput('xcol', 'Select driving variable (X in graph)', names(allData)),
     selectInput('ycol', 'Select response variable (Y in graph and in the maps)', names(allData),
       selected = names(allData)[[12]]),
