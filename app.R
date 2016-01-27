@@ -152,12 +152,11 @@ server <- function(input, output) {
      cv <- round((sd(x)/mean(x))*100,1)
   }
   
-  
-  
   # reactive expression to filter data of BASE raster
   
+  # baseline scenario
   rasterDF_Base <- reactive({
-    #
+    # Define variable
     varToRaster <- match(input$mainvar, names(allData))
     
     # define scenario
@@ -183,65 +182,35 @@ server <- function(input, output) {
     
   })
   
-  
+  # alternative scenario
   rasterDF_Alt <- reactive({
     # Define variable
     varToRaster <- match(input$mainvar, names(allData))
+    
+    # define scenario
+    crop <- input$crop2
+    soil <- input$soil2
+    scn <- input$scn2
     
     # Define stats
     clickStats <- input$stats
     clickComp <- input$comp
     keepVar <- as.numeric(ifelse(clickStats == "av", 3, 4))
     
-    # define scenario
-    crop2 <- input$crop2
-    soil2 <- input$soil2
-    scn2 <- input$scn2
-    
-    r2 <- allData %>%
-      filter(CurrentCrop == crop2 & 
-               thisSoil == soil2  &
-               thisScenario == scn2) %>%
+    r1 <- allData %>%
+      filter(CurrentCrop == crop & 
+               thisSoil == soil  &
+               thisScenario == scn) %>%
       dplyr::select(thisLat,thisLong, varToRaster) %>%
+      group_by(thisLat, thisLong) %>%
       summarise_each(funs(mean,cvFunc)) %>%
       dplyr::select(thisLat, thisLong, keepVar)
     
-    r2
+    r1
 
   })
   
-  # --------- All working below here
-  
-  dataRaster1 <- reactive({
-    
-    crop <- input$crop
-    soil <- input$soil
-    scn <- input$scn
-    
-    allData <- allData %>%
-      filter(CurrentCrop == crop & 
-               thisSoil == soil  &
-               thisScenario == scn
-      )
-    #  allData[,input$mainvar]
-    allData
-  })
-    
-  # reactive expression to filter data of ALTERNATIVE raster
-  dataRaster2 <- reactive({
-    
-    crop2 <- input$crop2
-    soil2 <- input$soil2
-    scn2 <- input$scn2
-    
-    allData <- allData %>%
-      filter(CurrentCrop == crop2 & 
-               thisSoil == soil2  &
-               thisScenario == scn2
-      )
-    #  allData[,input$mainvar]
-    allData
-  })
+  # end of raster df selection
   
 
   selectedData <- reactive({
@@ -444,16 +413,12 @@ server <- function(input, output) {
   
   # Table raster1
   output$table1 <- renderTable({
- 
   rasterDF_Base()
-  
   })
   
   # Table raster2
   output$table2 <- renderTable({
-    
-    rasterDF_Base()
-    
+    rasterDF_Alt()
   })
   
 }
