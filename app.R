@@ -1,4 +1,4 @@
-# 01-kmeans-app
+# CCII - MBIE prototype App (RA2)
 
 palette(c("#E41A1C", "#377EB8", "#4DAF4A", "#984EA3",
   "#FF7F00", "#FFFF33", "#A65628", "#F781BF", "#999999"))
@@ -15,55 +15,64 @@ library(maps)
 library(rgdal)
 #install.packages('raster', repos = 'http://r-forge.r-project.org/', type = 'source')
 
+
+# load raw dataframe
 allData <- read.csv("C:\\GitHubRepos\\CCII_ShinyApp\\AllData(RA2).csv", header = TRUE)
 
+# Costomise data
 allData <- allData %>%
   mutate(Lat_Long = paste0(thisLat,"_",thisLong), FUE = TotalBiomass/PTfert)
 
+# toad support rasters
 r <- raster("C:\\apsim_dev\\Projects\\CCII\\GIS_layers\\CaseStudy\\Filter_ArableKaituna.tif")
 
-# add 'Kaituna' catchment 
+# Load polygon maps for 'Kaituna' catchment (FIX<E: Not working) 
 pathShapeFile <- 'C:/apsim_dev/Projects/CCII/GIS_layers/CaseStudy/lowerKaitunabnd(WGS84).shp'
 sf2 <- readShapeSpatial(pathShapeFile, proj4string = CRS("+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"))
 #sf2 <- readOGR("C:/apsim_dev/Projects/CCII/GIS_layers/CaseStudy","lowerKaitunabnd(WGS84)")
 sf2 <- gSimplify(sf2,tol=.01,topologyPreserve = TRUE)
 #plot(sf2, bg="transparent", xlim=c(167.2,178.55),main = "name")
 
+
 #-------------THE UI ------------------------------------------------
 
 
 ui <- fluidPage(
   
-  headerPanel('RA2 CCII Arable crop'),
+  headerPanel('RA2 CCII-MBIE Broadacre Crops'),
   
+  # Side panel details
   sidebarPanel(width = 2,
+    # input variable
     selectInput('mainvar', 'Select the output variable:', names(allData)),
     
+    # input stats
     tags$hr(),
     h4(tags$b("Calculation details")),
     radioButtons("stats", "Statistics:",
                  inline = TRUE,
                  c("Average" = "av","CV (%)" = "cv")),
-    
     radioButtons("diff", "Comparison method:",
                  inline = TRUE,
                  c("Absolute" = "abs","Relative" = "rel")),
-   
+    
+   # input scenario 1 (baseline)
     tags$hr(),
-   h4(tags$b("Refence scenario")),
+    h4(tags$b("Refence scenario")),
     selectInput('scn', 'Climate scenario 1', as.character(unique(allData$thisScenario))),
     selectInput('crop', 'Crop type 1', as.character(unique(allData$CurrentCrop))),
     selectInput('soil', 'Soil type 1', as.character(unique(allData$thisSoil))),
     
+   # input scenario 2 (alternative)
     tags$hr(),
     h4(tags$b("Alternative scenario")),
     selectInput('scn2', 'Climate scenario 2', as.character(unique(allData$thisScenario))),
     selectInput('crop2', 'Crop type 2 ', as.character(unique(allData$CurrentCrop))),
     selectInput('soil2', 'Soil type 2', as.character(unique(allData$thisSoil))),
     
+   # input graphing details
     tags$hr(),
     h4(tags$b("Graphing")),
-
     selectInput('xcol', 'Select driving variable (X in graph)', names(allData)),
     selectInput('ycol', 'Select response variable (Y in graph and in the maps)', names(allData),
       selected = names(allData)[[12]]),
@@ -71,29 +80,31 @@ ui <- fluidPage(
       min = 1, max = 9)
   ),
   
+  # Main panel details
   mainPanel(
   
     tabsetPanel(
       
       # tab 1
       tabPanel("Spatial analysis", 
-               verbatimTextOutput("summary"), 
-               textOutput("text1"),
-               radioButtons("statOut", "Statistics to output:",
-                            inline = TRUE,
-                            c("Average" = "av",
-                              "Median" = "med",
-                              "Coefficient of Variation" = "cv",
-                              "Standard Deviation" = "sd")),
+               #  verbatimTextOutput("summary"), 
+               #  textOutput("text1"),
+             
+               # show map
                leafletOutput("basemap"),
-               #  leafletOutput("map_result"), # this becomes a new map, so all has to be fit in the basemap for overlay?
                p(),
-               actionButton("recalc", "New points"),
+               
+               # map specific controls
+             #  actionButton("recalc", "New points"),
+               p(),
+               actionButton("mapUpdateButton", "Update Maps"),
+               p(),
                sliderInput("slider1", 
                            label = h4("Raster transparency"), 
                            min = 0, max = 1, value = 0.5),
-               actionButton("mapUpdateButton", "Update Maps"),
+               p(),
                tableOutput("table1"),
+               tableOutput("table2"),
                
                uiOutput("ggvis_ui"), # FIXME: trying to do transparency in slide
                ggvisOutput("ggvis")
@@ -121,6 +132,39 @@ ui <- fluidPage(
 
 
 server <- function(input, output) {
+  
+  # reactive expression to filter data of BASE raster
+  dataRaster1 <- reactive({
+    
+    crop <- input$crop
+    soil <- input$soil
+    scn <- input$scn
+    
+    allData <- allData %>%
+      filter(CurrentCrop == crop & 
+          thisSoil == soil  &
+          thisScenario == scn
+      )
+  #  allData[,input$mainvar]
+    allData
+  })
+    
+  # reactive expression to filter data of ALTERNATIVE raster
+  dataRaster2 <- reactive({
+    
+    crop2 <- input$crop2
+    soil2 <- input$soil2
+    scn2 <- input$scn2
+    
+    allData <- allData %>%
+      filter(CurrentCrop == crop2 & 
+               thisSoil == soil2  &
+               thisScenario == scn2
+      )
+    #  allData[,input$mainvar]
+    allData
+  })
+  
 
   selectedData <- reactive({
     
@@ -290,17 +334,35 @@ server <- function(input, output) {
   # Print table of data to be resterised
   output$table1 <- renderTable({
  
-    varToRaster <- match(input$ycol, names(allData))
+    varToRaster <- match(input$mainvar, names(allData))
+   # varToRaster <- match(input$mainvar, names(allData))
     
-    allData %>%
+   df <- dataRaster1()
+    
+ #   allData %>%
+    df %>%
     dplyr::select(thisLat, thisLong, varToRaster) %>%
     head()
+  })
+  
+  
+  output$table2 <- renderTable({
+    
+    varToRaster <- match(input$mainvar, names(allData))
+    # varToRaster <- match(input$mainvar, names(allData))
+    
+    df <- dataRaster2()
+    
+    #   allData %>%
+    df %>%
+      dplyr::select(thisLat, thisLong, varToRaster) %>%
+      head()
   })
   
   # Create raster image
   output$map_result <- renderLeaflet({
     
-    varToRaster <- match(input$ycol, names(allData))
+    varToRaster <- match(input$mainvar, names(allData))
     
     allData %>%
       dplyr::select(thisLat, thisLong, varToRaster) %>%
