@@ -54,7 +54,7 @@ ui <- fluidPage(
     radioButtons("stats", "Statistics:",
                  inline = TRUE,
                  c("Average" = "av","CV (%)" = "cv")),
-    radioButtons("diff", "Comparison method:",
+    radioButtons("comp", "Comparison method:",
                  inline = TRUE,
                  c("Absolute" = "abs","Relative" = "rel")),
     
@@ -396,7 +396,8 @@ server <- function(input, output) {
     dplyr::select(thisLat, thisLong, varToRaster) %>%
       group_by(thisLat, thisLong) %>%
       summarise_each(funs(mean,cvFunc)) %>%
-    head(50)
+      mutate(click1 = input$stats,click2 = input$comp) %>%    
+      head(50)
   })
   
   # Table raster2
@@ -410,6 +411,7 @@ server <- function(input, output) {
       dplyr::select(thisLat, thisLong, varToRaster) %>%
       group_by(thisLat, thisLong) %>%
       summarise_each(funs(mean,cvFunc)) %>%
+      mutate(click1 = input$stats,click2 = input$comp) %>%
       head(50)
   })
   
