@@ -139,6 +139,21 @@ server <- function(input, output) {
   # set up user specific variables (run ONCE when loading or re-freshing)
   # FIXME: any variable to add at this level?
   
+  
+  # Function to select stat type
+  statTypeFunc <- function(x, type) {
+    switch(type,
+           av = mean(x),
+           cv = sd(x)/mean(x))
+  }
+  
+  # simple cv function
+  cvFunc <- function(x) {
+     cv <- round((sd(x)/mean(x))*100,1)
+  }
+  
+  
+  
   # reactive expression to filter data of BASE raster
   dataRaster1 <- reactive({
     
@@ -379,7 +394,9 @@ server <- function(input, output) {
     
     df %>%
     dplyr::select(thisLat, thisLong, varToRaster) %>%
-    head()
+      group_by(thisLat, thisLong) %>%
+      summarise_each(funs(mean,cvFunc)) %>%
+    head(50)
   })
   
   # Table raster2
@@ -391,7 +408,9 @@ server <- function(input, output) {
     
     df %>%
       dplyr::select(thisLat, thisLong, varToRaster) %>%
-      head()
+      group_by(thisLat, thisLong) %>%
+      summarise_each(funs(mean,cvFunc)) %>%
+      head(50)
   })
   
 }
