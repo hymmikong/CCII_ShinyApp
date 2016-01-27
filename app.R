@@ -152,12 +152,28 @@ server <- function(input, output) {
      cv <- round((sd(x)/mean(x))*100,1)
   }
   
-  # reactive expression to filter data of BASE raster
+  # reactive expressions to filter data of BASE raster
+  
+  
+  # select stats
+  statSelection <- reactive({
+    clickStats <- input$stats
+    clickComp <- input$comp
+    keepVar <- as.numeric(ifelse(clickStats == "av", 3, 4)) # FIXME: this is selected by hand now, make it smarter later
+    keepVar
+  })
+  
+  # select variable
+  varSelection <- reactive({
+    varToRaster <- match(input$mainvar, names(allData))
+    varToRaster
+  })
+  
   
   # baseline scenario
   rasterDF_Base <- reactive({
     # Define variable
-    varToRaster <- match(input$mainvar, names(allData))
+  #  varToRaster <- match(input$mainvar, names(allData))
     
     # define scenario
     crop <- input$crop
@@ -165,18 +181,18 @@ server <- function(input, output) {
     scn <- input$scn
     
     # Define stats
-    clickStats <- input$stats
-    clickComp <- input$comp
-        keepVar <- as.numeric(ifelse(clickStats == "av", 3, 4))
+  #  clickStats <- input$stats
+  #  clickComp <- input$comp
+  #      keepVar <- as.numeric(ifelse(clickStats == "av", 3, 4))
     
     r1 <- allData %>%
       filter(CurrentCrop == crop & 
                thisSoil == soil  &
                thisScenario == scn) %>%
-      dplyr::select(thisLat,thisLong, varToRaster) %>%
+      dplyr::select(thisLat,thisLong, varSelection()) %>%
       group_by(thisLat, thisLong) %>%
       summarise_each(funs(mean,cvFunc)) %>%
-      dplyr::select(thisLat, thisLong, keepVar)
+      dplyr::select(thisLat, thisLong, statSelection())
 
     r1
     
@@ -185,7 +201,7 @@ server <- function(input, output) {
   # alternative scenario
   rasterDF_Alt <- reactive({
     # Define variable
-    varToRaster <- match(input$mainvar, names(allData))
+ #   varToRaster <- match(input$mainvar, names(allData))
     
     # define scenario
     crop <- input$crop2
@@ -193,18 +209,18 @@ server <- function(input, output) {
     scn <- input$scn2
     
     # Define stats
-    clickStats <- input$stats
-    clickComp <- input$comp
-    keepVar <- as.numeric(ifelse(clickStats == "av", 3, 4))
+ #   clickStats <- input$stats
+ #   clickComp <- input$comp
+ #   keepVar <- as.numeric(ifelse(clickStats == "av", 3, 4))
     
     r1 <- allData %>%
       filter(CurrentCrop == crop & 
                thisSoil == soil  &
                thisScenario == scn) %>%
-      dplyr::select(thisLat,thisLong, varToRaster) %>%
+      dplyr::select(thisLat,thisLong, varSelection()) %>%
       group_by(thisLat, thisLong) %>%
       summarise_each(funs(mean,cvFunc)) %>%
-      dplyr::select(thisLat, thisLong, keepVar)
+      dplyr::select(thisLat, thisLong, statSelection())
     
     r1
 
