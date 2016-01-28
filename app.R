@@ -47,7 +47,7 @@ ui <- fluidPage(
   # Side panel details
   sidebarPanel(width = 2,
     # input variable
-    selectInput('mainvar', 'Select the output variable:', names(allData),selected = names(allData)[[15]]),
+    selectInput('mainvar', 'Select the output variable:', names(allData),selected = names(allData)[[22]]),
     
     # input stats
     tags$hr(),
@@ -69,7 +69,7 @@ ui <- fluidPage(
    # input scenario 2 (alternative)
     tags$hr(),
     h4(tags$b("Alternative scenario")),
-    selectInput('scn2', 'Climate scenario 2', as.character(unique(allData$thisScenario))),
+    selectInput('scn2', 'Climate scenario 2', as.character(unique(allData$thisScenario)),selected = as.character(unique(allData$thisScenario))[[2]]),
     selectInput('crop2', 'Crop type 2 ', as.character(unique(allData$CurrentCrop))),
     selectInput('soil2', 'Soil type 2', as.character(unique(allData$thisSoil)))
     
