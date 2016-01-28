@@ -15,6 +15,7 @@ library(maptools)
 library(rgeos)
 library(maps)
 library(rgdal)
+library(sp)
 #install.packages('raster', repos = 'http://r-forge.r-project.org/', type = 'source') # using new raster lib
 
 
@@ -173,7 +174,7 @@ server <- function(input, output) {
   # select comparison method
   compSelection <- reactive({
     clickComp <- input$comp
-    x <- as.numeric(ifelse(clickComp == "abs", "abs", "rel")) # FIXME: this is selected by hand now, make it smarter later
+    x <- ifelse(clickComp == "abs", "abs", "rel") # FIXME: this is selected by hand now, make it smarter later
     x
   })
   
@@ -369,7 +370,7 @@ server <- function(input, output) {
   
   # Create diff raster image
   
-  newRaster <- eventReactive(input$mapUpdateButton, { # to be added as raster in teh main map
+  newRaster_DF <- eventReactive(input$mapUpdateButton, { # to be added as raster in teh main map
 
      # calculate fifference map (as df)
     
@@ -380,14 +381,14 @@ server <- function(input, output) {
     
     compType <- compSelection()
     
-  #  if(compType == "abs") {
+    if(compType == "abs") {
       
-  #    df_diff$diff <- df_diff[3] - df_diff[4]
+     df_diff$diff <- df_diff[3] - df_diff[4]
       
- #   } else {
+    } else {
       
       df_diff$diff <- round( ( (df_diff[4] - df_diff[3]) / df_diff[3] ) * 100 , 2) # (base-fut)/base
-  #  } 
+    } 
     
   # trim df to lat/long/var  
    df_diff <- df_diff %>%
@@ -395,18 +396,21 @@ server <- function(input, output) {
     
     df_diff
     
-    # rasterise
-  #  spg <- df_diff
-  #  coordinates(spg) <- ~ df_diff.thisLong + df_diff.thisLat # Attention to variable names
-  ##  gridded(spg) <- TRUE
-   # rast <- raster(spg)
-   # proj4string(rast) <- "+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"
-  #  rast
-    
-    
-    
   }, ignoreNULL = FALSE)
   
+  
+  # rasterise diff df
+  newRaster_Layer <- reactive({
+    df_raster <- as.numeric(unlist(newRaster_DF()))
+    spg <- df_raster
+    coordinates(spg) <- ~ df_raster.thisLong + df_raster.thisLat # Attention to variable names
+    gridded(spg) <- TRUE
+    rast <- raster(spg)
+    proj4string(rast) <- "+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"
+    rast
+  })
+  
+
   
   
     # get map arguments
@@ -423,8 +427,8 @@ server <- function(input, output) {
   #    addCircles(lng = 176.272, lat = -38.0, radius = 50,fillOpacity = 0.2) %>%
       addRectangles(176, -38.25, 176.53, -37.67,fillOpacity = 0.05) %>%
     #  addRasterImage(r, colors = pal, opacity = input_slider(0, 1, value = 0.5, map=sliderValue)) %>%
-      addRasterImage(r, colors = pal, opacity = sliderValue) %>%
-    #  addRasterImage(newRaster(), colors = pal, opacity = sliderValue) %>%
+    #  addRasterImage(r, colors = pal, opacity = sliderValue) %>%
+   #   addRasterImage(newRaster_Layer(), colors = pal, opacity = sliderValue) %>%
       addLegend(pal = pal, values = values(r), title = "The legend") %>%
      # bind_shiny("ggvis", "ggvis_ui") %>%
       #addProviderTiles("OpenTopoMap", options = providerTileOptions(noWrap = TRUE)) %>%
@@ -447,13 +451,13 @@ server <- function(input, output) {
   
   # Table raster3
   output$table3 <- renderTable({
-    newRaster()
+    newRaster_DF()
   })
   
   #graph raster3
   output$plot7 <- renderPlot({
     
-    df <- newRaster()
+    df <- newRaster_DF()
     x    <- df[, "diff"]
     hist(as.numeric(unlist(x)))
   })
