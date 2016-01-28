@@ -71,8 +71,14 @@ ui <- fluidPage(
     h4(tags$b("Alternative scenario")),
     selectInput('scn2', 'Climate scenario 2', as.character(unique(allData$thisScenario)),selected = as.character(unique(allData$thisScenario))[[2]]),
     selectInput('crop2', 'Crop type 2 ', as.character(unique(allData$CurrentCrop))),
-    selectInput('soil2', 'Soil type 2', as.character(unique(allData$thisSoil)))
-    
+    selectInput('soil2', 'Soil type 2', as.character(unique(allData$thisSoil))),
+   
+   # graph set up
+   tags$hr(),
+   h4(tags$b("Graphing details")),
+   radioButtons("graphType", "Select type of graph:",
+                inline = TRUE,
+                c("Histogram" = "h","Box plot" = "b"))
 
   ),
   
@@ -132,9 +138,6 @@ ui <- fluidPage(
                p(),
                selectInput('gc', 'Grid cell', as.character(unique(allData$Lat_Long))),
               # tableOutput("table"), 
-              radioButtons("graphType", "Select type of graph:",
-                           inline = TRUE,
-                           c("Histogram" = "h","Box plot" = "b")),
                p(),
                plotOutput("plot3"),
                plotOutput("plot4")
@@ -326,7 +329,7 @@ server <- function(input, output) {
 
   # first graph
   output$plot1 <- renderPlot({
-    par(mar = c(5.1, 4.1, 0, 1))
+    par(mar = c(5.1, 4.1, 2, 1))
     plot(selectedData(),
          main="Reference (baseline)",
         # title("Title", line = -2),
@@ -339,7 +342,7 @@ server <- function(input, output) {
   
   # second graph
   output$plot2 <- renderPlot({
-    par(mar = c(5.1, 4.1, 0, 1))
+    par(mar = c(5.1, 4.1, 2, 1))
     plot(selectedDataFut(),
          main="Alternative scenario",
        #  title(main ="Title", line = -2),
@@ -501,10 +504,34 @@ server <- function(input, output) {
   # Print tables of data to be resterised
   #graph raster3
   output$plot7 <- renderPlot({
-    
+    par(mar = c(5.1, 4.1, 2, 1))
     df <- newRaster_DF()
     x    <- df[, "diff"]
-    hist(as.numeric(unlist(x)))
+  #  hist(as.numeric(unlist(x)),
+  #       main= "Distribution of scanario differences"
+  #       )
+    
+    
+    if(input$graphType == "b") {
+      
+      boxplot(as.numeric(unlist(x)),
+              main="Baseline",
+              horizontal=TRUE,
+              pch = 20, cex = 3)
+      
+    } else {
+      
+      hist(as.numeric(unlist(x)),
+      main="Baseline",
+      pch = 20, cex = 3)
+      
+      
+    }
+    
+    
+    
+    
+    
   })
   
   
