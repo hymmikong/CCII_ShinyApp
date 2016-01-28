@@ -78,7 +78,7 @@ ui <- fluidPage(
    h4(tags$b("Graphing details")),
    radioButtons("graphType", "Select type of graph:",
                 inline = TRUE,
-                c("Histogram" = "h","Box plot" = "b"))
+                c("Box plot" = "b","Histogram" = "h"))
 
   ),
   
@@ -375,6 +375,7 @@ server <- function(input, output) {
     
     hist(as.numeric(unlist(selectedDataPix()[2])),
          main="Baseline",
+         col = clusters()$cluster,
          xlim=c(ymin, ymax),
          pch = 20, cex = 3)
     }
@@ -405,6 +406,7 @@ server <- function(input, output) {
       
       hist(as.numeric(unlist(selectedDataPix_Alt()[2])),
            main="Baseline",
+           col = clusters()$cluster,
            xlim=c(ymin, ymax),
            pch = 20, cex = 3)
     }
@@ -515,14 +517,16 @@ server <- function(input, output) {
     if(input$graphType == "b") {
       
       boxplot(as.numeric(unlist(x)),
-              main="Baseline",
+              main="Distribution of differences between scenarios",
               horizontal=TRUE,
+              col = clusters()$cluster,
               pch = 20, cex = 3)
       
     } else {
       
       hist(as.numeric(unlist(x)),
-      main="Baseline",
+      main="Distribution of differences between scenarios",
+      col = clusters()$cluster,
       pch = 20, cex = 3)
       
       
