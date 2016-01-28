@@ -172,8 +172,8 @@ server <- function(input, output) {
   # select comparison method
   compSelection <- reactive({
     clickComp <- input$comp
-    keepVar <- as.numeric(ifelse(clickStats == "abs", 3, 4)) # FIXME: this is selected by hand now, make it smarter later
-    keepVar
+    x <- as.numeric(ifelse(clickComp == "abs", "abs", "rel")) # FIXME: this is selected by hand now, make it smarter later
+    x
   })
   
   # baseline scenario
@@ -365,7 +365,50 @@ server <- function(input, output) {
   
   
   
-  # get map arguments
+  
+  # Create diff raster image
+  
+  newRaster <- eventReactive(input$mapUpdateButton, { # to be added as raster in teh main map
+
+     # calculate fifference map (as df)
+    
+    r1 <- rasterDF_Base()
+    r2 <- rasterDF_Alt()
+    
+    df_diff <- merge(r1, r2, by = c("thisLat","thisLong"))
+    
+    compType <- compSelection()
+    
+  #  if(compType == "abs") {
+      
+  #    df_diff$diff <- df_diff[3] - df_diff[4]
+      
+ #   } else {
+      
+      df_diff$diff <- round( ( (df_diff[4] - df_diff[3]) / df_diff[3] ) * 100 , 2) # (base-fut)/base
+  #  } 
+    
+  # trim df to lat/long/var  
+   df_diff <- df_diff %>%
+   dplyr::select(thisLat,thisLong, diff)
+    
+    df_diff
+    
+    # rasterise
+  #  spg <- df_diff
+  #  coordinates(spg) <- ~ df_diff.thisLong + df_diff.thisLat # Attention to variable names
+  ##  gridded(spg) <- TRUE
+   # rast <- raster(spg)
+   # proj4string(rast) <- "+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"
+  #  rast
+    
+    
+    
+  }, ignoreNULL = FALSE)
+  
+  
+  
+    # get map arguments
   pal <- colorNumeric(c("#CD3333", "#FF8C00","#458B00"), values(r),
                       na.color = "transparent")
   sliderValue <- 0.5
@@ -380,7 +423,7 @@ server <- function(input, output) {
       addRectangles(176, -38.25, 176.53, -37.67,fillOpacity = 0.05) %>%
     #  addRasterImage(r, colors = pal, opacity = input_slider(0, 1, value = 0.5, map=sliderValue)) %>%
       addRasterImage(r, colors = pal, opacity = sliderValue) %>%
-     # addRasterImage(theRaster(), colors = pal, opacity = sliderValue) %>%
+    #  addRasterImage(newRaster(), colors = pal, opacity = sliderValue) %>%
       addLegend(pal = pal, values = values(r), title = "The legend") %>%
      # bind_shiny("ggvis", "ggvis_ui") %>%
       #addProviderTiles("OpenTopoMap", options = providerTileOptions(noWrap = TRUE)) %>%
@@ -400,28 +443,6 @@ server <- function(input, output) {
   output$table2 <- renderTable({
     rasterDF_Alt()
   })
-  
-  
-  # Create diff raster image
-  
-  newRaster <- eventReactive(input$mapUpdateButton, { # to be added as raster in teh main map
-    #  cbind(rnorm(10) * 2 + 176, rnorm(10) + -38) # random coordinates: Use the selected coordinates
-    
-    # calculate fifference map (as df)
-    
-    r1 <- rasterDF_Base()
-    r2 <- rasterDF_Alt()
-    
-    df_diff <- merge(r1, r2, by = c("thisLat","thisLong"))
-    
-    df_diff <- df_diff %>%
-      mutate(diff = mean.x - mean.y) %>%
-      dplyr::select(thisLat,thisLong, diff)
-    
-    df_diff
-    
-  }, ignoreNULL = FALSE)
-  
   
   # Table raster3
   output$table3 <- renderTable({
