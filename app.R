@@ -112,13 +112,13 @@ ui <- fluidPage(
       
       
       # tab 2
-      tabPanel("Region analysis",
+      tabPanel("Factor analysis",
                # input graphing details
                tags$hr(),
                h4(tags$b("Graphing")),
                selectInput('xcol', 'Select driving variable (X axes)', names(allData),selected = names(allData)[[12]]),
             #   selectInput('ycol', 'Select response variable (Y)', names(allData), selected = names(allData)[[15]]),
-               selectInput('contFact', 'Select contrast factor (panels)', names(allData),selected = names(allData)[[9]]),
+            #   selectInput('contFact', 'Select contrast factor (panels)', names(allData),selected = names(allData)[[9]]),
                numericInput('clusters', 'Cluster count', 3,
                             min = 1, max = 9),
                p(),
@@ -128,9 +128,14 @@ ui <- fluidPage(
                ),
       
       # tab 3
-      tabPanel("Location analysis", 
+      tabPanel("Grid-cell analysis", 
+               p(),
                selectInput('gc', 'Grid cell', as.character(unique(allData$Lat_Long))),
-               tableOutput("table"), 
+              # tableOutput("table"), 
+              radioButtons("graphType", "Select type of graph:",
+                           inline = TRUE,
+                           c("Histogram" = "h","Box plot" = "b")),
+               p(),
                plotOutput("plot3"),
                plotOutput("plot4")
                )
@@ -268,7 +273,9 @@ server <- function(input, output) {
   })
   
   
-  # pixelData
+  # Pixel Data (boxplots)
+  
+  #(baseline)
   selectedDataPix <- reactive({
     
     # Due to dplyr issue #318, we need temp variables for input values
@@ -284,10 +291,27 @@ server <- function(input, output) {
           thisScenario == scn
       )
     
-    
-    allData[, c(input$xcol, input$ycol)]
+    allData[, c(input$xcol, input$mainvar)]
   })
   
+  # Alternative
+  selectedDataPix_Alt <- reactive({
+    
+    # Due to dplyr issue #318, we need temp variables for input values
+    gc <- input$gc
+    crop2 <- input$crop2
+    soil2 <- input$soil2
+    scn2 <- input$scn2
+    
+    allData <- allData %>%
+      filter( Lat_Long == gc & # Note that's the same lat/long for both graphs
+                CurrentCrop == crop2 & 
+                thisSoil == soil2  &
+                thisScenario == scn2
+      )
+    
+    allData[, c(input$xcol, input$mainvar)]
+  })
   
   
 # cluster
@@ -295,21 +319,17 @@ server <- function(input, output) {
     kmeans(selectedData(), input$clusters)
   })
   
-  clustersFut <- reactive({
+  cluster_Alt <- reactive({
     kmeans(selectedDataFut(), input$clusters)
   })
   
-  meanValue <- reactive({
-    
-    mean(selectedDataFut())
-    
-  })
 
   # first graph
   output$plot1 <- renderPlot({
     par(mar = c(5.1, 4.1, 0, 1))
     plot(selectedData(),
-         main="Baseline",
+         main="Reference (baseline)",
+        # title("Title", line = -2),
          col = clusters()$cluster,
          pch = 20, cex = 3)
     points(clusters()$centers, pch = 4, cex = 4, lwd = 4) 
@@ -321,34 +341,70 @@ server <- function(input, output) {
   output$plot2 <- renderPlot({
     par(mar = c(5.1, 4.1, 0, 1))
     plot(selectedDataFut(),
-         main="Future",
-         col = clustersFut()$cluster,
+         main="Alternative scenario",
+       #  title(main ="Title", line = -2),
+         col = cluster_Alt()$cluster,
          pch = 20, cex = 3)
-    points(clustersFut()$centers, pch = 4, cex = 4, lwd = 4) 
+    points(cluster_Alt()$centers, pch = 4, cex = 4, lwd = 4) 
     
     
   })
   
-  # third graph
+  # third graph (Pixel analysis)
   output$plot3 <- renderPlot({
-    par(mar = c(5.1, 4.1, 0, 1))
-    boxplot(selectedDataPix()[1],
-         main="Future",
-         col = clusters()$cluster,
+    
+    ymin <- min(min(selectedDataPix()[2]), min(selectedDataPix_Alt()[2]))
+    ymax <- max(max(selectedDataPix()[2]), max(selectedDataPix_Alt()[2]))
+    
+    par(mar = c(5.1, 4.1, 2, 1))
+    
+    if(input$graphType == "b") {
+      
+      boxplot(selectedDataPix()[2],
+              main="Baseline",
+              col = clusters()$cluster,
+              horizontal=TRUE,
+              ylim=c(ymin, ymax),
+              pch = 20, cex = 3)
+      points(clusters()$centers, pch = 4, cex = 4, lwd = 4) 
+
+    } else {
+    
+    hist(as.numeric(unlist(selectedDataPix()[2])),
+         main="Baseline",
+         xlim=c(ymin, ymax),
          pch = 20, cex = 3)
-    points(clusters()$centers, pch = 4, cex = 4, lwd = 4) 
+    }
     
     
   })
   
   # forth graph
   output$plot4 <- renderPlot({
-    par(mar = c(5.1, 4.1, 0, 1))
-    boxplot(selectedDataPix()[2],
-            main=input$x,
+    
+    ymin <- min(min(selectedDataPix()[2]), min(selectedDataPix_Alt()[2]))
+    ymax <- max(max(selectedDataPix()[2]), max(selectedDataPix_Alt()[2]))
+    
+
+    par(mar = c(5.1, 4.1, 2, 1))
+    
+    if(input$graphType == "b") {
+    
+    boxplot(selectedDataPix_Alt()[2],
+            main= "Alternative",
             col = clusters()$cluster,
+            horizontal=TRUE,
+            ylim=c(ymin, ymax),
             pch = 20, cex = 3)
     points(clusters()$centers, pch = 4, cex = 4, lwd = 4) 
+    
+    } else {
+      
+      hist(as.numeric(unlist(selectedDataPix_Alt()[2])),
+           main="Baseline",
+           xlim=c(ymin, ymax),
+           pch = 20, cex = 3)
+    }
     
     
   })
