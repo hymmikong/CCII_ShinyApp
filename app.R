@@ -97,7 +97,7 @@ ui <- fluidPage(
                p(),
                
                # map specific controls
-             #  actionButton("recalc", "New points"),
+               actionButton("recalc", "New points"),
                p(),
                actionButton("mapUpdateButton", "Update Maps"),
                p(),
@@ -107,6 +107,7 @@ ui <- fluidPage(
                p(),
                tableOutput("table1"),
              tableOutput("table2"),
+             tableOutput("table3"),
              leafletOutput("map_result"),
                uiOutput("ggvis_ui"), # FIXME: trying to do transparency in slide
                ggvisOutput("ggvis")
@@ -158,7 +159,6 @@ server <- function(input, output) {
   # select stats
   statSelection <- reactive({
     clickStats <- input$stats
-    clickComp <- input$comp
     keepVar <- as.numeric(ifelse(clickStats == "av", 3, 4)) # FIXME: this is selected by hand now, make it smarter later
     keepVar
   })
@@ -169,23 +169,23 @@ server <- function(input, output) {
     varToRaster
   })
   
+  # select comparison method
+  compSelection <- reactive({
+    clickComp <- input$comp
+    keepVar <- as.numeric(ifelse(clickStats == "abs", 3, 4)) # FIXME: this is selected by hand now, make it smarter later
+    keepVar
+  })
   
   # baseline scenario
   rasterDF_Base <- reactive({
-    # Define variable
-  #  varToRaster <- match(input$mainvar, names(allData))
-    
+
     # define scenario
     crop <- input$crop
     soil <- input$soil
     scn <- input$scn
     
-    # Define stats
-  #  clickStats <- input$stats
-  #  clickComp <- input$comp
-  #      keepVar <- as.numeric(ifelse(clickStats == "av", 3, 4))
-    
-    r1 <- allData %>%
+
+    r <- allData %>%
       filter(CurrentCrop == crop & 
                thisSoil == soil  &
                thisScenario == scn) %>%
@@ -194,26 +194,19 @@ server <- function(input, output) {
       summarise_each(funs(mean,cvFunc)) %>%
       dplyr::select(thisLat, thisLong, statSelection())
 
-    r1
+    r
     
   })
   
   # alternative scenario
   rasterDF_Alt <- reactive({
-    # Define variable
- #   varToRaster <- match(input$mainvar, names(allData))
-    
+
     # define scenario
     crop <- input$crop2
     soil <- input$soil2
     scn <- input$scn2
     
-    # Define stats
- #   clickStats <- input$stats
- #   clickComp <- input$comp
- #   keepVar <- as.numeric(ifelse(clickStats == "av", 3, 4))
-    
-    r1 <- allData %>%
+    r <- allData %>%
       filter(CurrentCrop == crop & 
                thisSoil == soil  &
                thisScenario == scn) %>%
@@ -222,7 +215,7 @@ server <- function(input, output) {
       summarise_each(funs(mean,cvFunc)) %>%
       dplyr::select(thisLat, thisLong, statSelection())
     
-    r1
+    r
 
   })
   
@@ -372,30 +365,6 @@ server <- function(input, output) {
   
   
   
-  # Create raster image
-  
-  theRaster <- eventReactive(input$mapUpdateButton, {
-    
-    # create data-frame
-    varToRaster <- match(input$mainvar, names(allData))
-    
-    df <- dataRaster1()
-    
-    df <- df %>%
-      dplyr::select(thisLat, thisLong, varToRaster) %>%
-      group_by(thisLat, thisLong) %>%
-      mutate(varToRaster = mean(varToRaster))
-    
-    # rasterise
-    spg <- data.frame(df$thisLong, df$thisLat, df[3])
-    coordinates(spg) <- ~ df.thisLong + df.thisLat # Attention to variable names
-    gridded(spg) <- TRUE
-    rast <- raster(spg)
-    proj4string(rast) <- "+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"
-    rast
-  })
-  
-  
   # get map arguments
   pal <- colorNumeric(c("#CD3333", "#FF8C00","#458B00"), values(r),
                       na.color = "transparent")
@@ -418,12 +387,7 @@ server <- function(input, output) {
       addMarkers(data = points_map())
   })
   
-  # Update button
-  newRaster <- eventReactive(input$mapUpdateButton, {
-    
- # Update the rasyter
-    
-  })
+
   
   # Print tables of data to be resterised
   
@@ -435,6 +399,33 @@ server <- function(input, output) {
   # Table raster2
   output$table2 <- renderTable({
     rasterDF_Alt()
+  })
+  
+  
+  # Create diff raster image
+  
+  newRaster <- eventReactive(input$mapUpdateButton, { # to be added as raster in teh main map
+    #  cbind(rnorm(10) * 2 + 176, rnorm(10) + -38) # random coordinates: Use the selected coordinates
+    
+    # calculate fifference map (as df)
+    
+    r1 <- rasterDF_Base()
+    r2 <- rasterDF_Alt()
+    
+    df_diff <- merge(r1, r2, by = c("thisLat","thisLong"))
+    
+    df_diff <- df_diff %>%
+      mutate(diff = mean.x - mean.y) %>%
+      dplyr::select(thisLat,thisLong, diff)
+    
+    df_diff
+    
+  }, ignoreNULL = FALSE)
+  
+  
+  # Table raster3
+  output$table3 <- renderTable({
+    newRaster()
   })
   
 }
