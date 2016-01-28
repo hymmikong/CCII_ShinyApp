@@ -47,7 +47,7 @@ ui <- fluidPage(
   # Side panel details
   sidebarPanel(width = 2,
     # input variable
-    selectInput('mainvar', 'Select the output variable:', names(allData)),
+    selectInput('mainvar', 'Select the output variable:', names(allData),selected = names(allData)[[15]]),
     
     # input stats
     tags$hr(),
@@ -71,16 +71,9 @@ ui <- fluidPage(
     h4(tags$b("Alternative scenario")),
     selectInput('scn2', 'Climate scenario 2', as.character(unique(allData$thisScenario))),
     selectInput('crop2', 'Crop type 2 ', as.character(unique(allData$CurrentCrop))),
-    selectInput('soil2', 'Soil type 2', as.character(unique(allData$thisSoil))),
+    selectInput('soil2', 'Soil type 2', as.character(unique(allData$thisSoil)))
     
-   # input graphing details
-    tags$hr(),
-    h4(tags$b("Graphing")),
-    selectInput('xcol', 'Select driving variable (X in graph)', names(allData)),
-    selectInput('ycol', 'Select response variable (Y in graph and in the maps)', names(allData),
-      selected = names(allData)[[12]]),
-    numericInput('clusters', 'Cluster count', 3,
-      min = 1, max = 9)
+
   ),
   
   # Main panel details
@@ -102,6 +95,8 @@ ui <- fluidPage(
                p(),
                actionButton("mapUpdateButton", "Update Maps"),
                p(),
+               actionButton("saveDiffRaster", "Save map"),
+               p(),
                sliderInput("slider1", 
                            label = h4("Raster transparency"), 
                            min = 0, max = 1, value = 0.5),
@@ -117,7 +112,19 @@ ui <- fluidPage(
       
       
       # tab 2
-      tabPanel("Region analysis", plotOutput("plot1"), plotOutput("plot2")
+      tabPanel("Region analysis",
+               # input graphing details
+               tags$hr(),
+               h4(tags$b("Graphing")),
+               selectInput('xcol', 'Select driving variable (X)', names(allData),selected = names(allData)[[12]]),
+               selectInput('ycol', 'Select response variable (Y)', names(allData), selected = names(allData)[[15]]),
+               selectInput('contFact', 'Select factor to compare', names(allData),selected = names(allData)[[9]]),
+               numericInput('clusters', 'Cluster count', 3,
+                            min = 1, max = 9),
+               p(),
+               plotOutput("plot1"), 
+               p(),
+               plotOutput("plot2")
                ),
       
       # tab 3
@@ -370,8 +377,8 @@ server <- function(input, output) {
   
   # Create diff raster image
   
-  newRaster_DF <- eventReactive(input$mapUpdateButton, { # to be added as raster in teh main map
-
+ # newRaster_DF <- eventReactive(input$mapUpdateButton, { # to be added as raster in teh main map
+    newRaster_DF <- reactive({ # to be added as raster in teh main map
      # calculate fifference map (as df)
     
     r1 <- rasterDF_Base()
@@ -383,7 +390,7 @@ server <- function(input, output) {
     
     if(compType == "abs") {
       
-     df_diff$diff <- df_diff[3] - df_diff[4]
+     df_diff$diff <- df_diff[4] - df_diff[3] 
       
     } else {
       
@@ -395,15 +402,16 @@ server <- function(input, output) {
    dplyr::select(thisLat,thisLong, diff)
     
     df_diff
-    
-  }, ignoreNULL = FALSE)
+    })
+ # }, ignoreNULL = FALSE)
   
   
   # rasterise diff df
   newRaster_Layer <- reactive({
-    df_raster <- as.numeric(unlist(newRaster_DF()))
+    df_raster <- data.frame(as.numeric(unlist(newRaster_DF()))) # FIXME: not sure if/why unlist here
     spg <- df_raster
-    coordinates(spg) <- ~ df_raster.thisLong + df_raster.thisLat # Attention to variable names
+
+    coordinates(spg) <- ~ df_raster.thisLong + df_raster.thisLat # FIXME: breaks here 'df_raster.thisLong' not found
     gridded(spg) <- TRUE
     rast <- raster(spg)
     proj4string(rast) <- "+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"
@@ -427,8 +435,8 @@ server <- function(input, output) {
   #    addCircles(lng = 176.272, lat = -38.0, radius = 50,fillOpacity = 0.2) %>%
       addRectangles(176, -38.25, 176.53, -37.67,fillOpacity = 0.05) %>%
     #  addRasterImage(r, colors = pal, opacity = input_slider(0, 1, value = 0.5, map=sliderValue)) %>%
-    #  addRasterImage(r, colors = pal, opacity = sliderValue) %>%
-   #   addRasterImage(newRaster_Layer(), colors = pal, opacity = sliderValue) %>%
+      addRasterImage(r, colors = pal, opacity = sliderValue) %>%
+    #  addRasterImage(newRaster_Layer(), colors = pal, opacity = sliderValue) %>%
       addLegend(pal = pal, values = values(r), title = "The legend") %>%
      # bind_shiny("ggvis", "ggvis_ui") %>%
       #addProviderTiles("OpenTopoMap", options = providerTileOptions(noWrap = TRUE)) %>%
@@ -438,22 +446,6 @@ server <- function(input, output) {
 
   
   # Print tables of data to be resterised
-  
-  # Table raster1
-  output$table1 <- renderTable({
-  rasterDF_Base()
-  })
-  
-  # Table raster2
-  output$table2 <- renderTable({
-    rasterDF_Alt()
-  })
-  
-  # Table raster3
-  output$table3 <- renderTable({
-    newRaster_DF()
-  })
-  
   #graph raster3
   output$plot7 <- renderPlot({
     
@@ -461,6 +453,24 @@ server <- function(input, output) {
     x    <- df[, "diff"]
     hist(as.numeric(unlist(x)))
   })
+  
+  
+  # Table raster1
+  output$table1 <- renderTable({
+ # rasterDF_Base()
+  })
+  
+  # Table raster2
+  output$table2 <- renderTable({
+  #  rasterDF_Alt()
+  })
+  
+  # Table raster3
+  output$table3 <- renderTable({
+  #  newRaster_DF()
+  })
+  
+
   
 }
 
