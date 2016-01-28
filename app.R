@@ -61,7 +61,7 @@ ui <- fluidPage(
     
    # input scenario 1 (baseline)
     tags$hr(),
-    h4(tags$b("Refence scenario")),
+    h4(tags$b("Refence scenario (baseline)")),
     selectInput('scn', 'Climate scenario 1', as.character(unique(allData$thisScenario))),
     selectInput('crop', 'Crop type 1', as.character(unique(allData$CurrentCrop))),
     selectInput('soil', 'Soil type 1', as.character(unique(allData$thisSoil))),
@@ -116,9 +116,9 @@ ui <- fluidPage(
                # input graphing details
                tags$hr(),
                h4(tags$b("Graphing")),
-               selectInput('xcol', 'Select driving variable (X)', names(allData),selected = names(allData)[[12]]),
-               selectInput('ycol', 'Select response variable (Y)', names(allData), selected = names(allData)[[15]]),
-               selectInput('contFact', 'Select factor to compare', names(allData),selected = names(allData)[[9]]),
+               selectInput('xcol', 'Select driving variable (X axes)', names(allData),selected = names(allData)[[12]]),
+            #   selectInput('ycol', 'Select response variable (Y)', names(allData), selected = names(allData)[[15]]),
+               selectInput('contFact', 'Select contrast factor (panels)', names(allData),selected = names(allData)[[9]]),
                numericInput('clusters', 'Cluster count', 3,
                             min = 1, max = 9),
                p(),
@@ -231,6 +231,7 @@ server <- function(input, output) {
   # end of raster df selection
   
 
+  # select full dataset of selected variable (i.e. Y axes, the variable rasterised)
   selectedData <- reactive({
     
     # Due to dplyr issue #318, we need temp variables for input values
@@ -243,31 +244,27 @@ server <- function(input, output) {
       filter(  #Lat_Long == gc &
                  CurrentCrop == crop & 
                 thisSoil == soil  &
-               thisScenario == "base"
+               thisScenario == scn
               )
     
     
-    allData[, c(input$xcol, input$ycol)]
+    allData[, c(input$xcol, input$mainvar)]
   })
   
-  # fut
+  # select driving variable (X axes)
   selectedDataFut <- reactive({
-    
-    # Due to dplyr issue #318, we need temp variables for input values
-    gc <- input$gc
-    crop <- input$crop
-    soil <- input$soil
-    scn <- input$scn
+        # Due to dplyr issue #318, we need temp variables for input values
+    crop2 <- input$crop2
+    soil2 <- input$soil2
+    scn2 <- input$scn2
     
     allData <- allData %>%
-      filter( #Lat_Long == gc &
-              CurrentCrop == crop & 
-                thisSoil == soil  &
-                thisScenario == "fut1"
+      filter( CurrentCrop == crop2 & 
+                thisSoil == soil2  &
+                thisScenario == scn2
       )
     
-    
-    allData[, c(input$xcol, input$ycol)]
+    allData[, c(input$xcol, input$mainvar)]
   })
   
   
