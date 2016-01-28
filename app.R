@@ -108,6 +108,7 @@ ui <- fluidPage(
                tableOutput("table1"),
              tableOutput("table2"),
              tableOutput("table3"),
+             plotOutput("plot7"),
              leafletOutput("map_result"),
                uiOutput("ggvis_ui"), # FIXME: trying to do transparency in slide
                ggvisOutput("ggvis")
@@ -447,6 +448,14 @@ server <- function(input, output) {
   # Table raster3
   output$table3 <- renderTable({
     newRaster()
+  })
+  
+  #graph raster3
+  output$plot7 <- renderPlot({
+    
+    df <- newRaster()
+    x    <- df[, "diff"]
+    hist(as.numeric(unlist(x)))
   })
   
 }
