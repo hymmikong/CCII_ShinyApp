@@ -3,7 +3,6 @@
 palette(c("#E41A1C", "#377EB8", "#4DAF4A", "#984EA3",
   "#FF7F00", "#FFFF33", "#A65628", "#F781BF", "#999999"))
 
-
 # load libraries (FIXME: delete the ones not used anymore)
 library(shiny)
 library(dplyr)
@@ -21,7 +20,7 @@ library(sp)
 # load raw data
 allData <- read.csv("C:\\GitHubRepos\\CCII_ShinyApp\\data\\AllData(RA2).csv", header = TRUE)
 
-# Costomise data
+# Customise data
 allData <- allData %>%
   mutate(Lat_Long = paste0(thisLat,"_",thisLong), FUE = TotalBiomass/PTfert)
 
@@ -481,13 +480,13 @@ server <- function(input, output) {
   # Create a RASTER of the diff df ------------------------------------------ FIXME: Not working yet
   
   newRaster_Layer <- reactive ({
-    df_raster <- data.frame(as.numeric(unlist(rasterDF_Diff()))) # FIXME: not sure if/why unlist here
-    spg <- data.frame(df_raster$thisLong, df_raster$thisLat, df_raster$diff)
-    coordinates(spg) <- ~ df_raster.thisLong + df_raster.thisLat # FIXME: breaks here 'df_raster.thisLong' not found
+    df <- rasterDF_Diff()
+    spg <- data.frame(df$thisLong, df$thisLat, df$diff)
+    coordinates(spg) <- ~ df.thisLong + df.thisLat # Attention to variable names
     gridded(spg) <- TRUE
-    rast <- raster(spg)
-    proj4string(rast) <- "+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"
-    newRaster_Layer <- r
+    r <- raster(spg)
+    proj4string(r) <- "+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"
+    r
   })
   
 
@@ -513,13 +512,28 @@ server <- function(input, output) {
     # addPolygons(sf2, lng = 176.272, lat = -38.0, fill = TRUE) %>%
   #    addCircles(lng = 176.272, lat = -38.0, radius = 50,fillOpacity = 0.2) %>%
       addRectangles(176, -38.25, 176.53, -37.67,fillOpacity = 0.05) %>%
-      addRasterImage(r, colors = pal, opacity = sl()) %>%
+    #  addRasterImage(r, colors = pal, opacity = sl()) %>% # FixME: move to observer (just keeping to test it)
     #  addRasterImage(raster(as.numeric(unlist(rasterDF_Diff())))) %>%
-      addLegend(pal = pal, values = values(r), title = "The legend") %>%
+    #  addLegend(pal = pal, values = values(r), title = "The legend") %>%
      # bind_shiny("ggvis", "ggvis_ui") %>%
       #addProviderTiles("OpenTopoMap", options = providerTileOptions(noWrap = TRUE)) %>%
       addMarkers(data = points_map())
   })
+  
+  
+  # manage dynamic bit of main map - FIXME: not working fully yet
+  observe({
+    
+    pal <- colorNumeric(c("#CD3333", "#FF8C00","#458B00"), values(newRaster_Layer()), na.color = "transparent")
+    
+    leafletProxy("basemap", data = newRaster_Layer()) %>%
+      clearShapes() %>%
+      clearControls() %>%
+      addRasterImage(newRaster_Layer()) %>%
+      addLegend(pal = pal, values = values(newRaster_Layer()), title = "The legend")
+    
+  })
+  
   
 
   # Graph diff distrubution of raster DF (across pixels)
