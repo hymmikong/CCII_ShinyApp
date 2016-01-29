@@ -26,8 +26,8 @@ allData <- allData %>%
   mutate(Lat_Long = paste0(thisLat,"_",thisLong), FUE = TotalBiomass/PTfert)
 
 # load support rasters (FIXME: delete this after if not needed - for testing now)
-r <- raster("C:\\apsim_dev\\Projects\\CCII\\GIS_layers\\CaseStudy\\Filter_ArableKaituna.tif")
-
+#r <- raster("C:\\apsim_dev\\Projects\\CCII\\GIS_layers\\CaseStudy\\Filter_ArableKaituna.tif")
+r <- raster("C:\\GitHubRepos\\CCII_ShinyApp\\data\\test.tif")
 # Load polygon maps for 'Kaituna' catchment (FIX<E: Not working) 
 pathShapeFile <- 'C:/apsim_dev/Projects/CCII/GIS_layers/CaseStudy/lowerKaitunabnd(WGS84).shp'
 sf2 <- readShapeSpatial(pathShapeFile, proj4string = CRS("+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"))
@@ -451,8 +451,9 @@ server <- function(input, output) {
 # Create diff dataframe to be rasterised -------------------------
   
  # rasterDF_Diff <- eventReactive(input$mapUpdateButton, { # to be added as raster in teh main map
-    rasterDF_Diff <- reactive({ # to be added as raster in the main map
     
+  rasterDF_Diff <- reactive({ # to be added as raster in the main map
+      
     # calculate fifference map (as df)
     r1 <- rasterDF_Base()
     r2 <- rasterDF_Alt()
@@ -473,30 +474,38 @@ server <- function(input, output) {
     df_diff
     
     })
+  
  # }, ignoreNULL = FALSE)
   
   
-  # rasterise diff df
-  newRaster_Layer <- reactive({
+  # Create a RASTER of the diff df ------------------------------------------ FIXME: Not working yet
+  
+  newRaster_Layer <- reactive ({
     df_raster <- data.frame(as.numeric(unlist(rasterDF_Diff()))) # FIXME: not sure if/why unlist here
-    spg <- df_raster
-
+    spg <- data.frame(df_raster$thisLong, df_raster$thisLat, df_raster$diff)
     coordinates(spg) <- ~ df_raster.thisLong + df_raster.thisLat # FIXME: breaks here 'df_raster.thisLong' not found
     gridded(spg) <- TRUE
     rast <- raster(spg)
     proj4string(rast) <- "+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"
-    rast
+    newRaster_Layer <- r
   })
   
 
+  # Prepare main map ----------------------------------------------------
   
-  
-    # get map arguments
-  pal <- colorNumeric(c("#CD3333", "#FF8C00","#458B00"), values(r),
-                      na.color = "transparent")
+  # get map arguments
+  pal <- colorNumeric(c("#CD3333", "#FF8C00","#458B00"), values(r), na.color = "transparent")
+ 
   sliderValue <- 0.5
   
-  # create main map
+  # raster transparancy
+  sl <- reactive ({
+    input$slider1
+  })
+   
+  
+  # create main map------------------------
+  
   output$basemap <- renderLeaflet({
     leaflet() %>%
       setView(lng = 176.272, lat = -38.0, zoom = 8) %>%
@@ -504,9 +513,8 @@ server <- function(input, output) {
     # addPolygons(sf2, lng = 176.272, lat = -38.0, fill = TRUE) %>%
   #    addCircles(lng = 176.272, lat = -38.0, radius = 50,fillOpacity = 0.2) %>%
       addRectangles(176, -38.25, 176.53, -37.67,fillOpacity = 0.05) %>%
-    #  addRasterImage(r, colors = pal, opacity = input_slider(0, 1, value = 0.5, map=sliderValue)) %>%
-      addRasterImage(r, colors = pal, opacity = sliderValue) %>%
-    #  addRasterImage(newRaster_Layer(), colors = pal, opacity = sliderValue) %>%
+      addRasterImage(r, colors = pal, opacity = sl()) %>%
+    #  addRasterImage(raster(as.numeric(unlist(rasterDF_Diff())))) %>%
       addLegend(pal = pal, values = values(r), title = "The legend") %>%
      # bind_shiny("ggvis", "ggvis_ui") %>%
       #addProviderTiles("OpenTopoMap", options = providerTileOptions(noWrap = TRUE)) %>%
@@ -514,17 +522,13 @@ server <- function(input, output) {
   })
   
 
-  
-  # Print tables of data to be resterised
-  #graph raster3
+  # Graph diff distrubution of raster DF (across pixels)
   output$plot7 <- renderPlot({
+    
     par(mar = c(5.1, 4.1, 2, 1))
+    
     df <- rasterDF_Diff()
     x    <- df[, "diff"]
-  #  hist(as.numeric(unlist(x)),
-  #       main= "Distribution of scanario differences"
-  #       )
-    
     
     if(input$graphType == "b") {
       
@@ -537,19 +541,16 @@ server <- function(input, output) {
     } else {
       
       hist(as.numeric(unlist(x)),
-      main="Distribution of differences between scenarios",
-      col = clusters()$cluster,
-      pch = 20, cex = 3)
-      
+           main="Distribution of differences between scenarios",
+           col = clusters()$cluster,
+           pch = 20, cex = 3)
       
     }
     
-    
-    
-    
-    
   })
   
+  
+  # Tables for testing
   
   # Table raster1
   output$table1 <- renderTable({
@@ -565,8 +566,6 @@ server <- function(input, output) {
   output$table3 <- renderTable({
   #  rasterDF_Diff()
   })
-  
-
   
 }
 
