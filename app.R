@@ -441,7 +441,7 @@ server <- function(input, output) {
   })
   
 
-  # Set location of points in NZ (Just testing the widget)
+  # Set location of points in NZ (Just testing the widget) FIXME: make it point to the raster selected 
   points_map <- eventReactive(input$recalc, {
     cbind(rnorm(10) * 2 + 176, rnorm(10) + -38) # random coordinates: Use the selected coordinates
   }, ignoreNULL = FALSE)
@@ -493,9 +493,9 @@ server <- function(input, output) {
   # Prepare main map ----------------------------------------------------
   
   # get map arguments
-  pal <- colorNumeric(c("#CD3333", "#FF8C00","#458B00"), values(r), na.color = "transparent")
+ # pal <- colorNumeric(c("#CD3333", "#FF8C00","#458B00"), values(r), na.color = "transparent")
  
-  sliderValue <- 0.5
+ # sliderValue <- 0.5
   
   # raster transparancy
   sl <- reactive ({
@@ -511,7 +511,7 @@ server <- function(input, output) {
       addTiles() %>%
     # addPolygons(sf2, lng = 176.272, lat = -38.0, fill = TRUE) %>%
   #    addCircles(lng = 176.272, lat = -38.0, radius = 50,fillOpacity = 0.2) %>%
-      addRectangles(176, -38.25, 176.53, -37.67,fillOpacity = 0.05) %>%
+      addRectangles(176, -38.25, 176.53, -37.67, fillOpacity = 0.05) %>%
     #  addRasterImage(r, colors = pal, opacity = sl()) %>% # FixME: move to observer (just keeping to test it)
     #  addRasterImage(raster(as.numeric(unlist(rasterDF_Diff())))) %>%
     #  addLegend(pal = pal, values = values(r), title = "The legend") %>%
@@ -521,21 +521,27 @@ server <- function(input, output) {
   })
   
   
-  # manage dynamic bit of main map - FIXME: not working fully yet
+  # manage dynamic bit of rasters to be added to main map
   observe({
-    
-    pal <- colorNumeric(c("#CD3333", "#FF8C00","#458B00"), values(newRaster_Layer()), na.color = "transparent")
-    
+    pal <- colorNumeric(c("#8B0000","#EE4000", "#FFA500","#008B45"), 
+                        values(newRaster_Layer()), na.color = "transparent")
     leafletProxy("basemap", data = newRaster_Layer()) %>%
       clearShapes() %>%
       clearControls() %>%
-      addRasterImage(newRaster_Layer()) %>%
+      addRasterImage(newRaster_Layer(),opacity = sl()) %>%
       addLegend(pal = pal, values = values(newRaster_Layer()), title = "The legend")
-    
   })
   
+  # update legend
+ # observe({
+ #   leafletProxy("basemap", data = c(newRaster_Layer())) %>%
+ #     clearControls() %>%
+ #     clearShapes() %>%
+ #     addRasterImage(newRaster_Layer(),opacity = sl())
+ # })
   
-
+  
+  
   # Graph diff distrubution of raster DF (across pixels)
   output$plot7 <- renderPlot({
     
@@ -558,6 +564,8 @@ server <- function(input, output) {
            main="Distribution of differences between scenarios",
            col = clusters()$cluster,
            pch = 20, cex = 3)
+      
+    #  df %>% ggplot(aes(diff)) + geom_histogram(binwidth = mean(diff)*0.1)
       
     }
     
