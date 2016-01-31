@@ -113,7 +113,7 @@ ui <- fluidPage(
                p(),
                
                # map specific controls
-               actionButton("recalc", "New points"),
+              # actionButton("recalc", "New points"),
                p(),
                actionButton("mapUpdateButton", "Update Maps"),
                p(),
@@ -189,6 +189,16 @@ server <- function(input, output) {
   
   # -------------- Reactive expressions to filter data of BASE raster ------------------
   
+  
+  # Name of selected variable in original file (FIXME: untested)
+  mainVarSelec <- reactive({ # aims to substiture most input$mainvar
+    
+    selectedVars_df %>%
+      filter(fullName == input$mainvar) %>%
+      dplyr::select(variable)
+    
+  })
+  
   # select stats
   statSelection <- reactive({
     clickStats <- input$stats
@@ -208,6 +218,7 @@ server <- function(input, output) {
     x <- ifelse(clickComp == "abs", "abs", "rel") # FIXME: this is selected by hand now, make it smarter later
     x
   })
+  
   
   # ----------------- Subset data for each specific analysis ---------------------------------
   
@@ -460,9 +471,9 @@ server <- function(input, output) {
   
 
   # Set location of points in NZ (Just testing the widget) FIXME: make it point to the raster selected 
-  points_map <- eventReactive(input$recalc, {
-    cbind(rnorm(10) * 2 + 176, rnorm(10) + -38) # random coordinates: Use the selected coordinates
-  }, ignoreNULL = FALSE)
+#  points_map <- eventReactive(input$recalc, {
+#    cbind(rnorm(10) * 2 + 176, rnorm(10) + -38) # random coordinates: Use the selected coordinates
+#  }, ignoreNULL = FALSE)
   
   
 # Create diff dataframe to be rasterised -------------------------
@@ -529,13 +540,14 @@ server <- function(input, output) {
       addTiles() %>%
     # addPolygons(sf2, lng = 176.272, lat = -38.0, fill = TRUE) %>%
   #    addCircles(lng = 176.272, lat = -38.0, radius = 50,fillOpacity = 0.2) %>%
-      addRectangles(176, -38.25, 176.53, -37.67, fillOpacity = 0.05) %>%
+      addRectangles(176, -38.25, 176.53, -37.67, fillOpacity = 0.05) # %>%
     #  addRasterImage(r, colors = pal, opacity = sl()) %>% # FixME: move to observer (just keeping to test it)
-    #  addRasterImage(raster(as.numeric(unlist(rasterDF_Diff())))) %>%
+    #  addRasterImage(raster(as.numeric(unlist(rasterDF_Diff())))) 
+       # %>%
     #  addLegend(pal = pal, values = values(r), title = "The legend") %>%
      # bind_shiny("ggvis", "ggvis_ui") %>%
       #addProviderTiles("OpenTopoMap", options = providerTileOptions(noWrap = TRUE)) %>%
-      addMarkers(data = points_map())
+    #  addMarkers(data = points_map())
   })
   
   
