@@ -20,6 +20,18 @@ library(sp)
 # load raw data
 allData <- read.csv("C:\\GitHubRepos\\CCII_ShinyApp\\data\\AllData(RA2).csv", header = TRUE)
 
+# read variabe labels
+varList <- read.csv("C:\\GitHubRepos\\CCII_ShinyApp\\data\\variableNames.csv", header = TRUE)
+
+# Select variables of interest
+selectedVars <- varList %>%
+  filter(include == "yes")
+
+selectColNos <- match(as.character(selectedVars$variable),names(allData))
+
+allData <- allData  %>%
+  dplyr::select(selectColNos)
+
 # Customise data
 allData <- allData %>%
   mutate(Lat_Long = paste0(thisLat,"_",thisLong), FUE = TotalBiomass/PTfert)
@@ -46,6 +58,9 @@ ui <- fluidPage(
   sidebarPanel(width = 2,
     # input variable
     selectInput('mainvar', 'Select the output variable:', names(allData),selected = names(allData)[[22]]),
+    
+    # Show selection
+    textOutput("text1"),
     
     # input stats
     tags$hr(),
@@ -588,6 +603,20 @@ server <- function(input, output) {
   output$table3 <- renderTable({
   #  rasterDF_Diff()
   })
+  
+  # Show variable name
+  output$text1 <- renderText({ 
+    
+   # x <- match(as.character(input$mainvar), names(allData))
+    varName <- varList %>%
+      filter(variable == as.character(input$mainvar)) %>%
+      dplyr::select(fullName)
+    varUnit <- NULL
+    paste("You have selected",input$mainvar)
+    
+    
+  })  
+
   
 }
 
