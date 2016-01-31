@@ -20,21 +20,23 @@ library(sp)
 # load raw data
 allData <- read.csv("C:\\GitHubRepos\\CCII_ShinyApp\\data\\AllData(RA2).csv", header = TRUE)
 
-# read variabe labels
+# Select variables of interest
 varList <- read.csv("C:\\GitHubRepos\\CCII_ShinyApp\\data\\variableNames.csv", header = TRUE)
 
-# Select variables of interest
-selectedVars <- varList %>%
+selectedVars_df <- varList %>%
   filter(include == "yes")
 
-selectColNos <- match(as.character(selectedVars$variable),names(allData))
+varNames <- as.character(selectedVars_df$variable)
+
+selectColNos <- match(varNames,names(allData))
 
 allData <- allData  %>%
   dplyr::select(selectColNos)
 
-# Customise data
+# Customise data (FIXME: this should be done earlier in dataset)
 allData <- allData %>%
-  mutate(Lat_Long = paste0(thisLat,"_",thisLong), FUE = TotalBiomass/PTfert)
+  mutate(Lat_Long = paste0(thisLat,"_",thisLong), 
+         FUE = TotalBiomass/PTfert)
 
 # load support rasters (FIXME: delete this after if not needed - for testing now)
 #r <- raster("C:\\apsim_dev\\Projects\\CCII\\GIS_layers\\CaseStudy\\Filter_ArableKaituna.tif")
@@ -57,11 +59,12 @@ ui <- fluidPage(
   # Side panel details
   sidebarPanel(width = 2,
     # input variable
-    selectInput('mainvar', 'Select the output variable:', names(allData),selected = names(allData)[[22]]),
+   selectInput('mainvar', 'Select the output variable:', names(allData),selected = names(allData)[[22]]),
+  # selectInput('mainvar', 'Select the output variable:', varNames),
     
     # Show selection
     textOutput("text1"),
-    
+
     # input stats
     tags$hr(),
     h4(tags$b("Calculation details")),
@@ -607,12 +610,10 @@ server <- function(input, output) {
   # Show variable name
   output$text1 <- renderText({ 
     
-   # x <- match(as.character(input$mainvar), names(allData))
-    varName <- varList %>%
-      filter(variable == as.character(input$mainvar)) %>%
-      dplyr::select(fullName)
-    varUnit <- NULL
-    paste("You have selected",input$mainvar)
+  varDetails <-  selectedVars_df %>%
+      filter(variable == input$mainvar)
+    
+   paste0(varDetails[,"fullName"]," (",varDetails[,"unit"],")")
     
     
   })  
