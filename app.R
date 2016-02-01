@@ -45,9 +45,9 @@ allData <- allData %>%
 r <- raster("C:\\GitHubRepos\\CCII_ShinyApp\\data\\test.tif")
 # Load polygon maps for 'Kaituna' catchment (FIX<E: Not working) 
 pathShapeFile <- 'C:/apsim_dev/Projects/CCII/GIS_layers/CaseStudy/lowerKaitunabnd(WGS84).shp'
-sf2 <- readShapeSpatial(pathShapeFile, proj4string = CRS("+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"))
+#sf2 <- readShapeSpatial(pathShapeFile, proj4string = CRS("+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"))
 #sf2 <- readOGR("C:/apsim_dev/Projects/CCII/GIS_layers/CaseStudy","lowerKaitunabnd(WGS84)")
-sf2 <- gSimplify(sf2,tol=.01,topologyPreserve = TRUE)
+#sf2 <- gSimplify(sf2,tol=.01,topologyPreserve = TRUE)
 #plot(sf2, bg="transparent", xlim=c(167.2,178.55),main = "name")
 
 
@@ -545,19 +545,16 @@ server <- function(input, output) {
   output$basemap <- renderLeaflet({
     leaflet() %>%
       setView(lng = 176.272, lat = -38.0, zoom = 8) %>%
-      addTiles() %>%
-    # addPolygons(sf2, lng = 176.272, lat = -38.0, fill = TRUE) %>%
-  #    addCircles(lng = 176.272, lat = -38.0, radius = 50,fillOpacity = 0.2) %>%
-      addRectangles(176, -38.25, 176.53, -37.67, fillOpacity = 0.05) # %>%
-    #  addRasterImage(r, colors = pal, opacity = sl()) %>% # FixME: move to observer (just keeping to test it)
-    #  addRasterImage(raster(as.numeric(unlist(rasterDF_Diff())))) 
-       # %>%
-    #  addLegend(pal = pal, values = values(r), title = "The legend") %>%
-     # bind_shiny("ggvis", "ggvis_ui") %>%
-      #addProviderTiles("OpenTopoMap", options = providerTileOptions(noWrap = TRUE)) %>%
-    #  addMarkers(data = points_map())
+      addTiles()
   })
   
+  # update legend FIXME: Not working yet
+   observe({
+     leafletProxy("basemap", data = sl()) %>%
+      clearControls() %>%
+       clearShapes() %>%
+       addRasterImage(newRaster_Layer(),opacity = sl())
+   })
   
   # manage dynamic bit of rasters to be added to main map
   observe({
@@ -567,18 +564,15 @@ server <- function(input, output) {
       clearShapes() %>%
       clearControls() %>%
       addRasterImage(newRaster_Layer(),opacity = sl()) %>%
-      addLegend(pal = pal, values = values(newRaster_Layer()), title = varUnits()) # FIXME: Use % or CV% if relative selected
+      addPolygons(data=sf2, fill = "transparent",weight = 1) %>%
+      addLegend(pal = pal, values = values(newRaster_Layer()), title = ifelse(compSelection() == "abs", varUnits(), "(%)")) # FIXME: Use % or CV% if relative selected
   })
   
-  # update legend
- # observe({
- #   leafletProxy("basemap", data = c(newRaster_Layer())) %>%
- #     clearControls() %>%
- #     clearShapes() %>%
- #     addRasterImage(newRaster_Layer(),opacity = sl())
- # })
-  
-  
+  #observe({
+  #  leafletProxy("basemap", data = newRaster_Layer()) %>%
+  #    addPolygons(data=sf2, fill = "transparent")
+  #})
+
   
   # Graph diff distrubution of raster DF (across pixels)
   output$plot7 <- renderPlot({
