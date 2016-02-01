@@ -33,6 +33,8 @@ selectColNos <- match(varNames,names(allData))
 allData <- allData  %>%
   dplyr::select(selectColNos)
 
+fullNames <- as.character(selectedVars_df$fullName)
+
 # Customise data (FIXME: this should be done earlier in dataset)
 allData <- allData %>%
   mutate(Lat_Long = paste0(thisLat,"_",thisLong), 
@@ -59,8 +61,8 @@ ui <- fluidPage(
   # Side panel details
   sidebarPanel(width = 2,
     # input variable
-   selectInput('mainvar', 'Select the output variable:', names(allData),selected = names(allData)[[22]]),
-  # selectInput('mainvar', 'Select the output variable:', varNames),
+ #  selectInput('mainvar', 'Select the output variable:', names(allData), selected = names(allData)[[22]]),
+   selectInput('mainvar', 'Select the output variable:', fullNames, selected = fullNames[14]),
     
     # Show selection
     textOutput("text1"),
@@ -170,10 +172,6 @@ ui <- fluidPage(
 # shinyServer(function(input, output) { # why some examples use this syntaxe instead?
 server <- function(input, output) {
   
-  # set up user specific variables (run ONCE when loading or re-freshing)
-  # FIXME: any variable to add at this level?
-  
-  
   # Function to select stat type
   statTypeFunc <- function(x, type) {
     switch(type,
@@ -191,11 +189,12 @@ server <- function(input, output) {
   
   
   # Name of selected variable in original file (FIXME: untested)
-  mainVarSelec <- reactive({ # aims to substiture most input$mainvar
+  mainVarSelec <- reactive({ # aims to substiture most varNames
     
-    selectedVars_df %>%
-      filter(fullName == input$mainvar) %>%
-      dplyr::select(variable)
+   buf <-  selectedVars %>%
+     filter(fullName == as.character(input$mainvar))
+   
+   as.character(buf$variable)
     
   })
   
@@ -208,7 +207,7 @@ server <- function(input, output) {
   
   # select variable
   varSelection <- reactive({
-    varToRaster <- match(input$mainvar, names(allData))
+    varToRaster <- match(mainVarSelec(), names(allData))
     varToRaster
   })
   
@@ -287,7 +286,7 @@ server <- function(input, output) {
               )
     
     
-    allData[, c(input$xcol, input$mainvar)]
+    allData[, c(input$xcol, mainVarSelec())]
   })
   
   # select driving variable for graph (X axes)
@@ -303,7 +302,7 @@ server <- function(input, output) {
                 thisScenario == scn2
       )
     
-    allData[, c(input$xcol, input$mainvar)]
+    allData[, c(input$xcol, mainVarSelec())]
   })
   
   
@@ -325,7 +324,7 @@ server <- function(input, output) {
           thisScenario == scn
       )
     
-    allData[, c(input$xcol, input$mainvar)]
+    allData[, c(input$xcol, mainVarSelec())]
   })
   
   # Alternative
@@ -344,7 +343,7 @@ server <- function(input, output) {
                 thisScenario == scn2
       )
     
-    allData[, c(input$xcol, input$mainvar)]
+    allData[, c(input$xcol, mainVarSelec())]
   })
   
   
@@ -623,10 +622,10 @@ server <- function(input, output) {
   output$text1 <- renderText({ 
     
   varDetails <-  selectedVars_df %>%
-      filter(variable == input$mainvar)
+      filter(variable == mainVarSelec())
     
-   paste0(varDetails[,"fullName"]," (",varDetails[,"unit"],")")
-    
+  # paste0(varDetails[,"fullName"]," (",varDetails[,"unit"],")")
+ paste0(as.character(mainVarSelec()[1]), as.character( mainVarSelec()[2]))
     
   })  
 
