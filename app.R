@@ -187,7 +187,7 @@ server <- function(input, output) {
   
   # -------------- Reactive expressions to filter data of BASE raster ------------------
   
-  
+
   # Name of selected variable in original file (FIXME: untested)
   mainVarSelec <- reactive({ # aims to substiture most varNames
     
@@ -195,6 +195,15 @@ server <- function(input, output) {
      filter(fullName == as.character(input$mainvar))
    
    as.character(buf$variable)
+    
+  })
+  
+  # Units
+  varUnits <- reactive({
+    varDetails <-  selectedVars_df %>%
+      filter(variable == mainVarSelec())
+    
+   paste0("(",as.character(varDetails[,"unit"]),")") 
     
   })
   
@@ -558,7 +567,7 @@ server <- function(input, output) {
       clearShapes() %>%
       clearControls() %>%
       addRasterImage(newRaster_Layer(),opacity = sl()) %>%
-      addLegend(pal = pal, values = values(newRaster_Layer()), title = "The legend")
+      addLegend(pal = pal, values = values(newRaster_Layer()), title = varUnits()) # FIXME: Use % or CV% if relative selected
   })
   
   # update legend
@@ -621,11 +630,8 @@ server <- function(input, output) {
   # Show variable name
   output$text1 <- renderText({ 
     
-  varDetails <-  selectedVars_df %>%
-      filter(variable == mainVarSelec())
-    
-  # paste0(varDetails[,"fullName"]," (",varDetails[,"unit"],")")
- paste0(as.character(mainVarSelec()[1]), as.character( mainVarSelec()[2]))
+  varUnits()
+  #paste0(as.character(mainVarSelec()[1]), as.character( mainVarSelec()[2]))
     
   })  
 
