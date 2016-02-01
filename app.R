@@ -41,13 +41,13 @@ allData <- allData %>%
          FUE = TotalBiomass/PTfert)
 
 # load support rasters (FIXME: delete this after if not needed - for testing now)
-#r <- raster("C:\\apsim_dev\\Projects\\CCII\\GIS_layers\\CaseStudy\\Filter_ArableKaituna.tif")
+
 r <- raster("C:\\GitHubRepos\\CCII_ShinyApp\\data\\test.tif")
 # Load polygon maps for 'Kaituna' catchment (FIX<E: Not working) 
 pathShapeFile <- 'C:/apsim_dev/Projects/CCII/GIS_layers/CaseStudy/lowerKaitunabnd(WGS84).shp'
-#sf2 <- readShapeSpatial(pathShapeFile, proj4string = CRS("+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"))
+sf2 <- readShapeSpatial(pathShapeFile, proj4string = CRS("+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"))
 #sf2 <- readOGR("C:/apsim_dev/Projects/CCII/GIS_layers/CaseStudy","lowerKaitunabnd(WGS84)")
-#sf2 <- gSimplify(sf2,tol=.01,topologyPreserve = TRUE)
+sf2 <- gSimplify(sf2,tol=.01,topologyPreserve = TRUE)
 #plot(sf2, bg="transparent", xlim=c(167.2,178.55),main = "name")
 
 
@@ -96,7 +96,15 @@ ui <- fluidPage(
    h4(tags$b("Graphing details")),
    radioButtons("graphType", "Select type of graph:",
                 inline = TRUE,
-                c("Box plot" = "b","Histogram" = "h"))
+                c("Box plot" = "b","Histogram" = "h")),
+ 
+   # download
+  tags$hr(),
+  h4(tags$b("Download selected data")),
+ downloadButton("downloadData", "Download data"),
+  p(),
+  radioButtons("filetype", "File type:",
+              choices = c("csv (table)", "tif (raster image)"))
 
   ),
   
@@ -119,8 +127,7 @@ ui <- fluidPage(
                p(),
                actionButton("mapUpdateButton", "Update Maps"),
                p(),
-               actionButton("saveDiffRaster", "Save map"),
-               p(),
+
                sliderInput("slider1", 
                            label = h4("Raster transparency"), 
                            min = 0, max = 1, value = 0.5),
@@ -188,10 +195,10 @@ server <- function(input, output) {
   # -------------- Reactive expressions to filter data of BASE raster ------------------
   
 
-  # Name of selected variable in original file (FIXME: untested)
+  # Name of selected variable in original file. Converts "selected" name to name in "raw" data
   mainVarSelec <- reactive({ # aims to substiture most varNames
     
-   buf <-  selectedVars %>%
+   buf <-  selectedVars_df %>%
      filter(fullName == as.character(input$mainvar))
    
    as.character(buf$variable)
@@ -628,6 +635,15 @@ server <- function(input, output) {
   #paste0(as.character(mainVarSelec()[1]), as.character( mainVarSelec()[2]))
     
   })  
+  
+  # Download data ----------------------------- FIXME: file is not as expected
+  output$downloadData <- downloadHandler(
+    filename = function() { paste("test", '.csv', sep='') },
+    content = function(file) {
+      write.csv(rasterDF_Diff(), file)
+    }
+  )
+  
 
   
 }
