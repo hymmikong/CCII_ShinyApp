@@ -171,24 +171,19 @@ server <- function(input, output) {
   
   # -------------- Reactive expressions to filter data of BASE raster ------------------
   
-
   # Name of selected variable in original file. Converts "selected" name to name in "raw" data
   mainVarSelec <- reactive({ # aims to substiture most varNames
-    
    buf <-  selectedVars_df %>%
      filter(fullName == as.character(input$mainvar))
-   
-   as.character(buf$variable)
+   as.character(buf$variable) # returns var name in raw data
     
   })
   
-  # Units
+  # Units of selected variable
   varUnits <- reactive({
     varDetails <-  selectedVars_df %>%
       filter(variable == mainVarSelec())
-    
    paste0("(",as.character(varDetails[,"unit"]),")") 
-    
   })
   
   # select stats
@@ -214,17 +209,15 @@ server <- function(input, output) {
   
   # ----------------- Subset data for each specific analysis ---------------------------------
   
-  # Raster data (pooled by pixel) --------------
+  # Raster data (summarised by pixel with average or CV%) --------------
   
   # baseline scenario
   rasterDF_Base <- reactive({
-
     # define scenario
     crop <- input$crop
     soil <- input$soil
     scn <- input$scn
     
-
     r <- allData %>%
       filter(CurrentCrop == crop & 
                thisSoil == soil  &
@@ -233,14 +226,11 @@ server <- function(input, output) {
       group_by(thisLat, thisLong) %>%
       summarise_each(funs(mean,cvFunc)) %>%
       dplyr::select(thisLat, thisLong, statSelection())
-
     r
-    
   })
   
   # alternative scenario
   rasterDF_Alt <- reactive({
-
     # define scenario
     crop <- input$crop2
     soil <- input$soil2
@@ -254,17 +244,13 @@ server <- function(input, output) {
       group_by(thisLat, thisLong) %>%
       summarise_each(funs(mean,cvFunc)) %>%
       dplyr::select(thisLat, thisLong, statSelection())
-    
     r
-
   })
   
+  # Dataset for graphing (all data) ------------------------------
   
-  # Graphing dataset (all data) ----------------
-  
-
-  # select full dataset of selected variable (i.e. Y axes, the variable rasterised)
-  selectedData <- reactive({
+  # select full (all years) dataset of selected variable (i.e. Y axes, the variable rasterised)
+  selectedData_Base <- reactive({
     
     #gc <- input$gc
     crop <- input$crop
@@ -283,7 +269,7 @@ server <- function(input, output) {
   })
   
   # select driving variable for graph (X axes)
-  selectedDataFut <- reactive({
+  selectedData_Alt <- reactive({
         
     crop2 <- input$crop2
     soil2 <- input$soil2
@@ -294,15 +280,14 @@ server <- function(input, output) {
                 thisSoil == soil2  &
                 thisScenario == scn2
       )
-    
     allData[, c(input$xcol, mainVarSelec())]
   })
   
   
-  # Pixel Data (boxplots, filtered by lat-long)
+  # Pixel Data for graphing (filtered by lat-long)
   
   #(baseline)
-  selectedDataPix <- reactive({
+  selectedDataPix_Base <- reactive({
     
     # Due to dplyr issue #318, we need temp variables for input values
     gc <- input$gc
@@ -316,14 +301,12 @@ server <- function(input, output) {
           thisSoil == soil  &
           thisScenario == scn
       )
-    
     allData[, c(input$xcol, mainVarSelec())]
   })
   
   # Alternative
   selectedDataPix_Alt <- reactive({
     
-    # Due to dplyr issue #318, we need temp variables for input values
     gc <- input$gc
     crop2 <- input$crop2
     soil2 <- input$soil2
@@ -343,33 +326,39 @@ server <- function(input, output) {
   # Cluster analysis --------------------------------------------------
   
   clusters <- reactive({
-    kmeans(selectedData(), input$clusters)
+    kmeans(selectedData_Base(), input$clusters)
   })
   
   cluster_Alt <- reactive({
-    kmeans(selectedDataFut(), input$clusters)
+    kmeans(selectedData_Alt(), input$clusters)
   })
   
   
   # Draw graphs -----------------------------------------------------------
 
+  
+  axesLimits <- reactive({
+    xmin <- min(min(selectedDataPix_Base()[1]), min(selectedDataPix_Alt()[1]))
+    xmax <- max(max(selectedDataPix_Base()[1]), max(selectedDataPix_Alt()[1]))
+    ymin <- min(min(selectedDataPix_Base()[2]), min(selectedDataPix_Alt()[2]))
+    ymax <- max(max(selectedDataPix_Base()[2]), max(selectedDataPix_Alt()[2]))
+    x <- data.frame(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax)
+    x
+  })
+  
+  
   # X Y comparison of variables ------------
   
   # first graph
   output$plot1 <- renderPlot({
     par(mar = c(5.1, 4.1, 2, 1))
     
-    xmin <- min(min(selectedDataPix()[1]), min(selectedDataPix_Alt()[1]))
-    xmax <- max(max(selectedDataPix()[1]), max(selectedDataPix_Alt()[1]))
-    ymin <- min(min(selectedDataPix()[2]), min(selectedDataPix_Alt()[2]))
-    ymax <- max(max(selectedDataPix()[2]), max(selectedDataPix_Alt()[2]))
-    
-    plot(selectedData(),
+    plot(selectedData_Base(),
          main="Reference (baseline)",
         # title("Title", line = -2),
          col = clusters()$cluster,
-         xlim=c(xmin, xmax),
-         ylim=c(ymin, ymax),
+        xlim=c(axesLimits()$xmin, axesLimits()$xmax),
+        ylim=c(axesLimits()$ymin, axesLimits()$ymax),
          pch = 20, cex = 3)
     points(clusters()$centers, pch = 4, cex = 4, lwd = 4) 
     
@@ -380,17 +369,11 @@ server <- function(input, output) {
   output$plot2 <- renderPlot({
     par(mar = c(5.1, 4.1, 2, 1))
     
-    # FIXME: make these reactive to avoid code duplication
-    xmin <- min(min(selectedDataPix()[1]), min(selectedDataPix_Alt()[1]))
-    xmax <- max(max(selectedDataPix()[1]), max(selectedDataPix_Alt()[1]))
-    ymin <- min(min(selectedDataPix()[2]), min(selectedDataPix_Alt()[2]))
-    ymax <- max(max(selectedDataPix()[2]), max(selectedDataPix_Alt()[2]))
-    
-    plot(selectedDataFut(),
+    plot(selectedData_Alt(),
          main="Alternative scenario",
        #  title(main ="Title", line = -2),
-         xlim=c(xmin, xmax),
-         ylim=c(ymin, ymax),
+       xlim=c(axesLimits()$xmin, axesLimits()$xmax),
+       ylim=c(axesLimits()$ymin, axesLimits()$ymax),
          col = cluster_Alt()$cluster,
          pch = 20, cex = 3)
     points(cluster_Alt()$centers, pch = 4, cex = 4, lwd = 4) 
@@ -402,25 +385,22 @@ server <- function(input, output) {
   
   # third graph (Pixel analysis)
   output$plot3 <- renderPlot({
-    
-    ymin <- min(min(selectedDataPix()[2]), min(selectedDataPix_Alt()[2]))
-    ymax <- max(max(selectedDataPix()[2]), max(selectedDataPix_Alt()[2]))
-    
+  
     par(mar = c(5.1, 4.1, 2, 1))
     
     if(input$graphType == "b") {
       
-      boxplot(selectedDataPix()[2],
+      boxplot(selectedDataPix_Base()[2],
               main="Baseline",
               col = clusters()$cluster,
               horizontal=TRUE,
-              ylim=c(ymin, ymax),
+              ylim=c(axesLimits()$ymin, axesLimits()$ymax),
               pch = 20, cex = 3)
       points(clusters()$centers, pch = 4, cex = 4, lwd = 4) 
 
     } else {
     
-    hist(as.numeric(unlist(selectedDataPix()[2])),
+    hist(as.numeric(unlist(selectedDataPix_Base()[2])),
          main="Baseline",
          col = clusters()$cluster,
          xlim=c(ymin, ymax),
@@ -433,8 +413,8 @@ server <- function(input, output) {
   # forth graph
   output$plot4 <- renderPlot({
     
-    ymin <- min(min(selectedDataPix()[2]), min(selectedDataPix_Alt()[2]))
-    ymax <- max(max(selectedDataPix()[2]), max(selectedDataPix_Alt()[2]))
+    ymin <- min(min(selectedDataPix_Base()[2]), min(selectedDataPix_Alt()[2]))
+    ymax <- max(max(selectedDataPix_Base()[2]), max(selectedDataPix_Alt()[2]))
     
 
     par(mar = c(5.1, 4.1, 2, 1))
@@ -462,15 +442,7 @@ server <- function(input, output) {
   })
   
 
-  # Set location of points in NZ (Just testing the widget) FIXME: make it point to the raster selected 
-#  points_map <- eventReactive(input$recalc, {
-#    cbind(rnorm(10) * 2 + 176, rnorm(10) + -38) # random coordinates: Use the selected coordinates
-#  }, ignoreNULL = FALSE)
-  
-  
 # Create diff dataframe to be rasterised -------------------------
-  
- # rasterDF_Diff <- eventReactive(input$mapUpdateButton, { # to be added as raster in teh main map
     
   rasterDF_Diff <- reactive({ # to be added as raster in the main map
       
@@ -495,8 +467,6 @@ server <- function(input, output) {
     
     })
   
- # }, ignoreNULL = FALSE)
-  
   
   # Create a RASTER of the diff df ------------------------------------------ FIXME: Not working yet
   
@@ -511,16 +481,6 @@ server <- function(input, output) {
   })
   
 
-  # Prepare main map ----------------------------------------------------
-  
-  # get map arguments
- # pal <- colorNumeric(c("#CD3333", "#FF8C00","#458B00"), values(r), na.color = "transparent")
- 
- # sliderValue <- 0.5
-  
-
-   
-  
   # create main map------------------------
   
   output$basemap <- renderLeaflet({
@@ -536,11 +496,6 @@ server <- function(input, output) {
     input$slider1
   })
   
-#   observe({
-#     leafletProxy("basemap", data = c(newRaster_Layer(),sl())) %>%
-#       addRasterImage(newRaster_Layer(),opacity = sl())
-#   })
-  
   # manage dynamic bit of rasters to be added to main map
   observe({
     pal <- colorNumeric(c("#8B0000","#EE4000", "#FFA500","#008B45"), 
@@ -551,14 +506,9 @@ server <- function(input, output) {
       addPolygons(data=sf2, fill = F ,opacity = 0.01, weight = 1) %>%
       addRasterImage(newRaster_Layer(),opacity = sl()) %>%
       addLegend(pal = pal, values = values(newRaster_Layer()), 
-                title = ifelse((compSelection() == "abs"| statSelection() == "av"), varUnits(), "(%)")) # FIXME: Use % or CV% if relative selected
+                title = ifelse((compSelection() == "abs"| 
+                                  statSelection() == "av"), varUnits(), "(%)")) # FIXME: Use % or CV% if relative selected
   })
-  
-  #observe({
-  #  leafletProxy("basemap", data = newRaster_Layer()) %>%
-  #    addPolygons(data=sf2, fill = "transparent")
-  #})
-
   
   # Graph diff distrubution of raster DF (across pixels)
   output$plot7 <- renderPlot({
@@ -582,9 +532,6 @@ server <- function(input, output) {
            main="Distribution of differences between scenarios",
            col = clusters()$cluster,
            pch = 20, cex = 3)
-      
-    #  df %>% ggplot(aes(diff)) + geom_histogram(binwidth = mean(diff)*0.1)
-      
     }
     
   })
@@ -613,11 +560,6 @@ server <- function(input, output) {
   })  
   
   # Download data ----------------------------- FIXME: file content is not as expected
-  
-  write.table_with_header <- function(x, file, header, ...){
-    cat(header, '\n',  file = file)
-    write.table(x, file, append = T, ...)
-  }
   
   output$downloadData <- downloadHandler(
     filename = function() { paste(input$mainvar, '.txt', sep=' ') },
