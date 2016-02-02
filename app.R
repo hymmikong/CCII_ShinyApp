@@ -105,7 +105,6 @@ ui <- fluidPage(
   p(),
   radioButtons("filetype", "File type:",
               choices = c("csv (table)", "tif (raster image)"))
-
   ),
   
   # Main panel details
@@ -136,9 +135,9 @@ ui <- fluidPage(
              tableOutput("table2"),
              tableOutput("table3"),
              plotOutput("plot7"),
-             leafletOutput("map_result"),
-               uiOutput("ggvis_ui"), # FIXME: trying to do transparency in slide
-               ggvisOutput("ggvis")
+             leafletOutput("map_result") #,
+           #    uiOutput("ggvis_ui"), # FIXME: trying to do transparency in slide
+           #    ggvisOutput("ggvis")
       ),
       
       
@@ -625,7 +624,7 @@ server <- function(input, output) {
   
   # Table raster3
   output$table3 <- renderTable({
-  #  rasterDF_Diff()
+    rasterDF_Diff()
   })
   
   # Show variable name
@@ -636,11 +635,27 @@ server <- function(input, output) {
     
   })  
   
-  # Download data ----------------------------- FIXME: file is not as expected
+  # Download data ----------------------------- FIXME: file content is not as expected
+  
+  write.table_with_header <- function(x, file, header, ...){
+    cat(header, '\n',  file = file)
+    write.table(x, file, append = T, ...)
+  }
+  
   output$downloadData <- downloadHandler(
-    filename = function() { paste("test", '.csv', sep='') },
+    filename = function() { paste(input$mainvar, '.txt', sep=' ') },
+   # filename = "test",
     content = function(file) {
-      write.csv(rasterDF_Diff(), file)
+      # FIXME: outputting individul values within the summary function (quick fix with new df)
+      df <- data.frame(lat = rasterDF_Diff()$thisLat, lon = rasterDF_Diff()$thisLong, Difference = rasterDF_Diff()$diff)
+      thisHeader <- paste0("#",input$mainvar," ",varUnits()," ", as.character(statSelection()))
+      fileConn<-file(file)
+      writeLines(c("Hello","World"), fileConn)
+      close(fileConn)
+      #writeLines(thisHeader)
+      write.table(df, file, row.names=F)
+    #  writeRaster(newRaster_Layer(),"test.tif",overwrite=TRUE)
+
     }
   )
   
