@@ -116,17 +116,14 @@ ui <- fluidPage(
       tabPanel("Spatial analysis", 
                #  verbatimTextOutput("summary"), 
                #  textOutput("text1"),
-             
                # show map
                leafletOutput("basemap"),
                p(),
-               
                # map specific controls
               # actionButton("recalc", "New points"),
                p(),
                actionButton("mapUpdateButton", "Update Maps"),
                p(),
-
                sliderInput("slider1", 
                            label = h4("Raster transparency"), 
                            min = 0, max = 1, value = 0.5),
@@ -135,9 +132,7 @@ ui <- fluidPage(
              tableOutput("table2"),
              tableOutput("table3"),
              plotOutput("plot7"),
-             leafletOutput("map_result") #,
-           #    uiOutput("ggvis_ui"), # FIXME: trying to do transparency in slide
-           #    ggvisOutput("ggvis")
+             leafletOutput("map_result")
       ),
       
       
@@ -540,10 +535,7 @@ server <- function(input, output) {
  
  # sliderValue <- 0.5
   
-  # raster transparancy
-  sl <- reactive ({
-    input$slider1
-  })
+
    
   
   # create main map------------------------
@@ -555,23 +547,28 @@ server <- function(input, output) {
   })
   
   # update legend FIXME: Not working yet
-   observe({
-     leafletProxy("basemap", data = sl()) %>%
-      clearControls() %>%
-       clearShapes() %>%
-       addRasterImage(newRaster_Layer(),opacity = sl())
-   })
+  
+  # raster transparancy
+  sl <- reactive ({
+    input$slider1
+  })
+  
+#   observe({
+#     leafletProxy("basemap", data = c(newRaster_Layer(),sl())) %>%
+#       addRasterImage(newRaster_Layer(),opacity = sl())
+#   })
   
   # manage dynamic bit of rasters to be added to main map
   observe({
     pal <- colorNumeric(c("#8B0000","#EE4000", "#FFA500","#008B45"), 
                         values(newRaster_Layer()), na.color = "transparent")
-    leafletProxy("basemap", data = newRaster_Layer()) %>%
-      clearShapes() %>%
-      clearControls() %>%
+    leafletProxy("basemap", data = c(newRaster_Layer(),input$slider1)) %>%
+      clearShapes() %>% # does it clear old raster?
+      clearControls() %>% # necessary to remove old legend
+      addPolygons(data=sf2, fill = F ,opacity = 0.01, weight = 1) %>%
       addRasterImage(newRaster_Layer(),opacity = sl()) %>%
-      addPolygons(data=sf2, fill = "transparent",weight = 1) %>%
-      addLegend(pal = pal, values = values(newRaster_Layer()), title = ifelse(compSelection() == "abs", varUnits(), "(%)")) # FIXME: Use % or CV% if relative selected
+      addLegend(pal = pal, values = values(newRaster_Layer()), 
+                title = ifelse((compSelection() == "abs"| statSelection() == "av"), varUnits(), "(%)")) # FIXME: Use % or CV% if relative selected
   })
   
   #observe({
@@ -622,17 +619,14 @@ server <- function(input, output) {
   #  rasterDF_Alt()
   })
   
-  # Table raster3
+  # Table raster3 Used for testing
   output$table3 <- renderTable({
-    rasterDF_Diff()
+   # rasterDF_Diff()
   })
   
   # Show variable name
   output$text1 <- renderText({ 
-    
   varUnits()
-  #paste0(as.character(mainVarSelec()[1]), as.character( mainVarSelec()[2]))
-    
   })  
   
   # Download data ----------------------------- FIXME: file content is not as expected
@@ -649,18 +643,10 @@ server <- function(input, output) {
       # FIXME: outputting individul values within the summary function (quick fix with new df)
       df <- data.frame(lat = rasterDF_Diff()$thisLat, lon = rasterDF_Diff()$thisLong, Difference = rasterDF_Diff()$diff)
       thisHeader <- paste0("#",input$mainvar," ",varUnits()," ", as.character(statSelection()))
-      fileConn<-file(file)
-      writeLines(c("Hello","World"), fileConn)
-      close(fileConn)
-      #writeLines(thisHeader)
+      # FIME: Add header with meta-data
       write.table(df, file, row.names=F)
-    #  writeRaster(newRaster_Layer(),"test.tif",overwrite=TRUE)
-
     }
   )
-  
-
-  
 }
 
 shinyApp(ui = ui, server = server)
