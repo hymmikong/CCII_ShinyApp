@@ -413,10 +413,6 @@ server <- function(input, output) {
   # forth graph
   output$plot4 <- renderPlot({
     
-    ymin <- min(min(selectedDataPix_Base()[2]), min(selectedDataPix_Alt()[2]))
-    ymax <- max(max(selectedDataPix_Base()[2]), max(selectedDataPix_Alt()[2]))
-    
-
     par(mar = c(5.1, 4.1, 2, 1))
     
     if(input$graphType == "b") {
@@ -425,7 +421,7 @@ server <- function(input, output) {
             main= "Alternative",
             col = clusters()$cluster,
             horizontal=TRUE,
-            ylim=c(ymin, ymax),
+            ylim=c(axesLimits()$ymin, axesLimits()$ymax),
             pch = 20, cex = 3)
     points(clusters()$centers, pch = 4, cex = 4, lwd = 4) 
     
@@ -434,7 +430,7 @@ server <- function(input, output) {
       hist(as.numeric(unlist(selectedDataPix_Alt()[2])),
            main="Baseline",
            col = clusters()$cluster,
-           xlim=c(ymin, ymax),
+           xlim=c(axesLimits()$ymin, axesLimits()$ymax),
            pch = 20, cex = 3)
     }
     
@@ -466,7 +462,6 @@ server <- function(input, output) {
     df_diff
     
     })
-  
   
   # Create a RASTER of the diff df ------------------------------------------ FIXME: Not working yet
   
