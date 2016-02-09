@@ -112,25 +112,13 @@ ui <- fluidPage(
                leafletOutput("basemap1"),
                p(),
                leafletOutput("basemap2"),
-               # show map
-        #       leafletOutput("basemap"),
-        #       p(),
-        #       sliderInput("slider1", 
-        #                   label = h4("Raster transparency"), 
-        #                   min = 0, max = 1, value = 0.5),
-        #       p(),
-              # tableOutput("table1"), # tables for testing app
-              # tableOutput("table2"),
-              # tableOutput("table3"),
-        #       plotOutput("plot7"),
-        #       leafletOutput("map_result")
         p()
       ),
       
       # tab 2
       tabPanel("Difference maps",
                # show map
-               leafletOutput("basemap"),
+               leafletOutput("basemap3"),
                p(),
                sliderInput("slider1", 
                            label = h4("Raster transparency"), 
@@ -539,31 +527,29 @@ server <- function(input, output) {
   })
   
 
-  # create main map------------------------
+  # create main maps with output call ------------------------
   
-  # FIXME: add parameters if necessary to taylor maps later
+  # Default function: add parameters if necessary to taylor maps later
   createMainMap <- function() {
-    
     renderLeaflet({
       leaflet() %>%
         setView(lng = 176.272, lat = -38.0, zoom = 8) %>%
-        addTiles()
+        addTiles(tileSize=100)
     })
-    
   }
   
-  # base 1
+  # 
+  
+  # base 1 (base)
   output$basemap1 <- createMainMap()
   
-  # base 2
+  # base 2 (for alternative)
   output$basemap2 <- createMainMap()
   
-  # base 3
-  output$basemap <- createMainMap()
+  # base 3 (for difference)
+  output$basemap3 <- createMainMap()
   
-  # update legend FIXME: Not working yet
-  
-  # raster transparancy
+  # raster transparancy FIXME: not working yet
   sl <- reactive ({
     input$slider1
   })
@@ -576,7 +562,7 @@ server <- function(input, output) {
   
   addMyPolygon("basemap1",sf2)
   addMyPolygon("basemap2",sf2)
-  addMyPolygon("basemap",sf2)
+  addMyPolygon("basemap3",sf2)
   
   # raster base
   observe({
@@ -610,7 +596,7 @@ server <- function(input, output) {
     pal <- colorNumeric(c("#ffffe5", "#fff7bc", "#fee391","#fec44f","#fe9929","#ec7014","#cc4c02","#8c2d04"), 
                         values(diff_rasterLayer()), na.color = "transparent")
     
-    leafletProxy("basemap", data = c(diff_rasterLayer(), sl())) %>%
+    leafletProxy("basemap3", data = c(diff_rasterLayer(), sl())) %>%
       clearShapes() %>% # does it clear old raster?
       clearControls() %>% # necessary to remove old legend
       addRasterImage(diff_rasterLayer(),colors = pal, opacity = sl()) %>%
