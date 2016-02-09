@@ -486,27 +486,34 @@ server <- function(input, output) {
 
   # Rasterise DFs for mapping ------------------------------------------ FIXME: Not working yet
   
-  # base raster
-#  base_rasterLayer <- reactive ({
-
-#  })
+  # FIXME: Can u set up a rasterMyDf function to avoid this code duplication?
+  rasterMyDf <- function(x) {
+    reactive ({
+      df <- x
+      spg <- data.frame(df$thisLong, df$thisLat, df$thisVar)
+      coordinates(spg) <- ~ df.thisLong + df.thisLat # Attention to variable names
+      gridded(spg) <- TRUE
+      r <- raster(spg)
+      proj4string(r) <- "+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"
+      r
+    })
+  }
   
-  # alternative raster
-  #  alt_rasterLayer <- reactive ({
-  
-  #  })
-  
+  # rasterise DFs with custumised function
+  base_rasterLayer <- rasterMyDf (rasterDF_Base())
+  base_rasterLayer <- rasterMyDf (rasterDF_Alt())
+  diff_rasterLayer <- rasterMyDf (rasterDF_Diff())
   
   # Diff raster
-  diff_rasterLayer <- reactive ({
-    df <- rasterDF_Diff()
-    spg <- data.frame(df$thisLong, df$thisLat, df$thisVar)
-    coordinates(spg) <- ~ df.thisLong + df.thisLat # Attention to variable names
-    gridded(spg) <- TRUE
-    r <- raster(spg)
-    proj4string(r) <- "+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"
-    r
-  })
+#  diff_rasterLayer <- reactive ({
+#    df <- rasterDF_Diff()
+#    spg <- data.frame(df$thisLong, df$thisLat, df$thisVar)
+#    coordinates(spg) <- ~ df.thisLong + df.thisLat # Attention to variable names
+#    gridded(spg) <- TRUE
+#    r <- raster(spg)
+#    proj4string(r) <- "+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"
+#    r
+#  })
   
 
   # create main map------------------------
