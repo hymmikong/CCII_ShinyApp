@@ -114,7 +114,7 @@ ui <- fluidPage(
                p(),
                leafletOutput("basemap1"),
                p(),
-               h4(tags$b("Reference scenario")),
+               h4(tags$b("Alternative scenario")),
                p(),
                leafletOutput("basemap2"),
         p()
@@ -141,12 +141,17 @@ ui <- fluidPage(
       # tab 2
       tabPanel("Factor analysis",
                # input graphing details
-               tags$hr(),
-               h4(tags$b("Graphing")),
+               p(),
+               h4(tags$b("Relationship between output variables")),
+               p(),
                selectInput('xcol', 'Select driving variable (X axes)', names(allData),selected = names(allData)[[12]]),
                numericInput('clusters', 'Cluster count', 3, min = 1, max = 9),
                p(),
+               h4(tags$b("Reference scenario")),
+               p(),
                plotOutput("plot1"), 
+               p(),
+               h4(tags$b("Alternative scenario")),
                p(),
                plotOutput("plot2")
                ),
@@ -396,7 +401,7 @@ server <- function(input, output) {
     par(mar = c(5.1, 4.1, 2, 1))
     
     plot(selectedData_Base(),
-         main="Reference (baseline)",
+     #    main="Reference (baseline)",
         # title("Title", line = -2),
          col = clusters()$cluster,
         xlim=c(axesLimits()$xmin, axesLimits()$xmax),
@@ -412,7 +417,7 @@ server <- function(input, output) {
     par(mar = c(5.1, 4.1, 2, 1))
     
     plot(selectedData_Alt(),
-         main="Alternative scenario",
+       #  main="Alternative scenario",
        #  title(main ="Title", line = -2),
        xlim=c(axesLimits()$xmin, axesLimits()$xmax),
        ylim=c(axesLimits()$ymin, axesLimits()$ymax),
@@ -445,7 +450,7 @@ server <- function(input, output) {
     hist(as.numeric(unlist(selectedDataPix_Base()[2])),
          main="Baseline",
          col = clusters()$cluster,
-         xlim=c(ymin, ymax),
+         xlim=c(axesLimits()$ymin, axesLimits()$ymax),
          pch = 20, cex = 3)
     }
     
@@ -540,7 +545,7 @@ server <- function(input, output) {
   createMainMap <- function() {
     renderLeaflet({
       leaflet() %>%
-        setView(lng = 176.272, lat = -38.0, zoom = 8) %>%
+        setView(lng = 176.272, lat = -38.0, zoom = 9) %>%
         addTiles()
     })
   }
