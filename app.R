@@ -244,7 +244,7 @@ server <- function(input, output) {
       dplyr::select(thisLat,thisLong, varSelection()) %>%
       group_by(thisLat, thisLong) %>%
       summarise_each(funs(mean,cvFunc)) %>%
-      dplyr::select(thisLat, thisLong, statSelection())
+      dplyr::select(thisLat, thisLong, thisVar = statSelection())
     r
   })
   
@@ -262,9 +262,36 @@ server <- function(input, output) {
       dplyr::select(thisLat,thisLong, varSelection()) %>%
       group_by(thisLat, thisLong) %>%
       summarise_each(funs(mean,cvFunc)) %>%
-      dplyr::select(thisLat, thisLong, statSelection())
+      dplyr::select(thisLat, thisLong, thisVar = statSelection())
     r
   })
+  
+  
+  # Create difference dataframe
+  
+  rasterDF_Diff <- reactive({ 
+    
+    # calculate fifference map (as df)
+    r1 <- rasterDF_Base()
+    r2 <- rasterDF_Alt()
+    df_diff <- merge(r1, r2, by = c("thisLat","thisLong"))
+    
+    compType <- compSelection() # method of comparison
+    
+    if(compType == "abs") {
+      df_diff$thisVar <- df_diff[4] - df_diff[3] # alt - base
+    } else {
+      df_diff$thisVar <- round( ( (df_diff[4] - df_diff[3]) / df_diff[3] ) * 100 , 2) # (base-fut)/base as percent
+    } 
+    
+    # trim df to a simple lat/long/var  
+    df_diff <- df_diff %>%
+      dplyr::select(thisLat,thisLong, thisVar)
+    
+    df_diff
+    
+  })
+  
   
   # Dataset for graphing (all data) ------------------------------
   
@@ -305,7 +332,7 @@ server <- function(input, output) {
   
   # Pixel Data for graphing (filtered by lat-long)
   
-  #(baseline)
+  # baseline
   selectedDataPix_Base <- reactive({
     
     # Due to dplyr issue #318, we need temp variables for input values
@@ -355,7 +382,7 @@ server <- function(input, output) {
   
   # Draw graphs -----------------------------------------------------------
 
-  
+  # create axes limits for all graphs
   axesLimits <- reactive({
     xmin <- min(min(selectedDataPix_Base()[1]), min(selectedDataPix_Alt()[1]))
     xmax <- max(max(selectedDataPix_Base()[1]), max(selectedDataPix_Alt()[1]))
@@ -366,9 +393,9 @@ server <- function(input, output) {
   })
   
   
-  # X Y comparison of variables ------------
+  # X Y graphic comparison of variables ------------
   
-  # first graph
+  # base graph
   output$plot1 <- renderPlot({
     par(mar = c(5.1, 4.1, 2, 1))
     
@@ -384,7 +411,7 @@ server <- function(input, output) {
 
     })
   
-  # second graph
+  # alternative graph
   output$plot2 <- renderPlot({
     par(mar = c(5.1, 4.1, 2, 1))
     
@@ -402,7 +429,7 @@ server <- function(input, output) {
   
   # Distribution graphs (within pixel) ------------
   
-  # third graph (Pixel analysis)
+  # base graph
   output$plot3 <- renderPlot({
   
     par(mar = c(5.1, 4.1, 2, 1))
@@ -429,7 +456,7 @@ server <- function(input, output) {
     
   })
   
-  # forth graph
+  # alternative graph
   output$plot4 <- renderPlot({
     
     par(mar = c(5.1, 4.1, 2, 1))
@@ -457,36 +484,23 @@ server <- function(input, output) {
   })
   
 
-# Create diff dataframe to be rasterised -------------------------
-    
-  rasterDF_Diff <- reactive({ # to be added as raster in the main map
-      
-    # calculate fifference map (as df)
-    r1 <- rasterDF_Base()
-    r2 <- rasterDF_Alt()
-    df_diff <- merge(r1, r2, by = c("thisLat","thisLong"))
-    
-    compType <- compSelection() # method of comparison
-    
-    if(compType == "abs") {
-     df_diff$diff <- df_diff[4] - df_diff[3] # alt - base
-    } else {
-      df_diff$diff <- round( ( (df_diff[4] - df_diff[3]) / df_diff[3] ) * 100 , 2) # (base-fut)/base as percent
-    } 
-    
-  # trim df to a simple lat/long/var  
-   df_diff <- df_diff %>%
-   dplyr::select(thisLat,thisLong, diff)
-    
-    df_diff
-    
-    })
+  # Rasterise DFs for mapping ------------------------------------------ FIXME: Not working yet
   
-  # Create a RASTER of the diff df ------------------------------------------ FIXME: Not working yet
+  # base raster
+#  base_rasterLayer <- reactive ({
+
+#  })
   
+  # alternative raster
+  #  alt_rasterLayer <- reactive ({
+  
+  #  })
+  
+  
+  # Diff raster
   diff_rasterLayer <- reactive ({
     df <- rasterDF_Diff()
-    spg <- data.frame(df$thisLong, df$thisLat, df$diff)
+    spg <- data.frame(df$thisLong, df$thisLat, df$thisVar)
     coordinates(spg) <- ~ df.thisLong + df.thisLat # Attention to variable names
     gridded(spg) <- TRUE
     r <- raster(spg)
@@ -548,7 +562,7 @@ server <- function(input, output) {
     par(mar = c(5.1, 4.1, 2, 1))
     
     df <- rasterDF_Diff()
-    x    <- df[, "diff"]
+    x    <- df[, "thisVar"]
     
     if(input$graphType == "b") {
       
@@ -598,7 +612,7 @@ server <- function(input, output) {
    # filename = "test",
     content = function(file) {
       # FIXME: outputting individul values within the summary function (quick fix with new df)
-      df <- data.frame(lat = rasterDF_Diff()$thisLat, lon = rasterDF_Diff()$thisLong, Difference = rasterDF_Diff()$diff)
+      df <- data.frame(lat = rasterDF_Diff()$thisLat, lon = rasterDF_Diff()$thisLong, Difference = rasterDF_Diff()$thisVar)
       thisHeader <- paste0("#",input$mainvar," ",varUnits()," ", as.character(statSelection()))
       # FIME: Add header with meta-data
       write.table(df, file, row.names=F)
