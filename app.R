@@ -109,7 +109,12 @@ ui <- fluidPage(
       
       # tab 1
       tabPanel("Spatial analysis", 
+               p(),
+               h4(tags$b("Reference scenario")),
+               p(),
                leafletOutput("basemap1"),
+               p(),
+               h4(tags$b("Reference scenario")),
                p(),
                leafletOutput("basemap2"),
         p()
@@ -118,6 +123,8 @@ ui <- fluidPage(
       # tab 2
       tabPanel("Difference maps",
                # show map
+               p(),
+               h4(tags$b("Differences between selected scenarios")),
                leafletOutput("basemap3"),
                p(),
                sliderInput("slider1", 
