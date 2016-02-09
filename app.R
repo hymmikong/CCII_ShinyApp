@@ -534,7 +534,7 @@ server <- function(input, output) {
     renderLeaflet({
       leaflet() %>%
         setView(lng = 176.272, lat = -38.0, zoom = 8) %>%
-        addTiles(tileSize=100)
+        addTiles()
     })
   }
   
@@ -596,17 +596,21 @@ server <- function(input, output) {
     pal <- colorNumeric(c("#ffffe5", "#fff7bc", "#fee391","#fec44f","#fe9929","#ec7014","#cc4c02","#8c2d04"), 
                         values(diff_rasterLayer()), na.color = "transparent")
     
+    thisTitle <- ifelse((compSelection() == "rel"| statSelection() == 4), "(%)", varUnits()) # FIXME: the use of int for statSel is not intuitive
+    
     leafletProxy("basemap3", data = c(diff_rasterLayer(), sl())) %>%
       clearShapes() %>% # does it clear old raster?
       clearControls() %>% # necessary to remove old legend
       addRasterImage(diff_rasterLayer(),colors = pal, opacity = sl()) %>%
       addLegend(pal = pal, values = values(diff_rasterLayer()), 
-                title = ifelse((compSelection() == "abs"| 
-                                  statSelection() == "av"), varUnits(), "(%)")) # FIXME: Use % or CV% if relative selected
+                title = thisTitle) # FIXME: Use % or CV% if relative selected
   })
   
   
-
+  # create common legend
+  observe({
+    
+  })
   
   
   # Graph diff distrubution of raster DF (across pixels)
