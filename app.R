@@ -517,27 +517,26 @@ server <- function(input, output) {
   
 
   # create main map------------------------
-  # base 1
-  output$basemap1 <- renderLeaflet({
-    leaflet() %>%
-      setView(lng = 176.272, lat = -38.0, zoom = 8) %>%
-      addTiles()
-  })
   
+  # FIXME: add parameters if necessary to taylor maps later
+  createMainMap <- function() {
+    
+    renderLeaflet({
+      leaflet() %>%
+        setView(lng = 176.272, lat = -38.0, zoom = 8) %>%
+        addTiles()
+    })
+    
+  }
+  
+  # base 1
+  output$basemap1 <- createMainMap()
   
   # base 2
-  output$basemap2 <- renderLeaflet({
-    leaflet() %>%
-    setView(lng = 176.272, lat = -38.0, zoom = 8) %>%
-      addTiles()
-  })
+  output$basemap2 <- createMainMap()
   
   # base 3
-  output$basemap <- renderLeaflet({
-    leaflet() %>%
-      setView(lng = 176.272, lat = -38.0, zoom = 8) %>%
-      addTiles()
-  })
+  output$basemap <- createMainMap()
   
   # update legend FIXME: Not working yet
   
@@ -546,13 +545,26 @@ server <- function(input, output) {
     input$slider1
   })
   
+  # add polygon custom function
+  addMyPolygon <- function (x, y) {
+    leafletProxy(x, data = y) %>%
+    addPolygons(data=y, fill = F ,opacity = 0.5, weight = 1)
+  }
+  
+  addMyPolygon("basemap1",sf2)
+  addMyPolygon("basemap2",sf2)
+  addMyPolygon("basemap",sf2)
+  
   # manage dynamic bit of rasters to be added to main map
   observe({
     pal <- colorNumeric(c("#8B0000","#EE4000", "#FFA500","#008B45"), 
                         values(diff_rasterLayer()), na.color = "transparent")
     
+    # add region contour
+    
+    
+    
     # raster 1
-
     leafletProxy("basemap", data = c(diff_rasterLayer(),input$slider1)) %>%
       clearShapes() %>% # does it clear old raster?
       clearControls() %>% # necessary to remove old legend
