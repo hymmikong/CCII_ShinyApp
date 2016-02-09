@@ -1,7 +1,7 @@
 # CCII - MBIE prototype App (RA2)
 
-palette(c("#E41A1C", "#377EB8", "#4DAF4A", "#984EA3",
-  "#FF7F00", "#FFFF33", "#A65628", "#F781BF", "#999999"))
+#palette(c("#E41A1C", "#377EB8", "#4DAF4A", "#984EA3",
+#  "#FF7F00", "#FFFF33", "#A65628", "#F781BF", "#999999"))
 
 # load libraries (FIXME: delete the ones not used anymore)
 library(shiny)
@@ -15,6 +15,7 @@ library(rgeos)
 library(maps)
 library(rgdal)
 library(sp)
+library(gplots)
 #install.packages('raster', repos = 'http://r-forge.r-project.org/', type = 'source') # using new raster lib
 
 # load raw data
@@ -500,20 +501,42 @@ server <- function(input, output) {
   }
   
   # rasterise DFs with custumised function
-  base_rasterLayer <- rasterMyDf (rasterDF_Base())
-  base_rasterLayer <- rasterMyDf (rasterDF_Alt())
-  diff_rasterLayer <- rasterMyDf (rasterDF_Diff())
+ # base_rasterLayer <- rasterMyDf (rasterDF_Base())
+ # base_rasterLayer <- rasterMyDf (rasterDF_Alt())
+  #diff_rasterLayer <- rasterMyDf (rasterDF_Diff()) # FIXME: This removes reactivity to layer change
+  
+  
+  base_rasterLayer <- reactive ({
+    df <- rasterDF_Base()
+    spg <- data.frame(df$thisLong, df$thisLat, df$thisVar)
+    coordinates(spg) <- ~ df.thisLong + df.thisLat # Attention to variable names
+    gridded(spg) <- TRUE
+    r <- raster(spg)
+    proj4string(r) <- "+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"
+    r
+  })
+  
+  
+  alt_rasterLayer <- reactive ({
+    df <- rasterDF_Alt()
+    spg <- data.frame(df$thisLong, df$thisLat, df$thisVar)
+    coordinates(spg) <- ~ df.thisLong + df.thisLat # Attention to variable names
+    gridded(spg) <- TRUE
+    r <- raster(spg)
+    proj4string(r) <- "+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"
+    r
+  })
   
   # Diff raster
-#  diff_rasterLayer <- reactive ({
-#    df <- rasterDF_Diff()
-#    spg <- data.frame(df$thisLong, df$thisLat, df$thisVar)
-#    coordinates(spg) <- ~ df.thisLong + df.thisLat # Attention to variable names
-#    gridded(spg) <- TRUE
-#    r <- raster(spg)
-#    proj4string(r) <- "+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"
-#    r
-#  })
+  diff_rasterLayer <- reactive ({
+    df <- rasterDF_Diff()
+    spg <- data.frame(df$thisLong, df$thisLat, df$thisVar)
+    coordinates(spg) <- ~ df.thisLong + df.thisLat # Attention to variable names
+    gridded(spg) <- TRUE
+    r <- raster(spg)
+    proj4string(r) <- "+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"
+    r
+  })
   
 
   # create main map------------------------
@@ -548,32 +571,57 @@ server <- function(input, output) {
   # add polygon custom function
   addMyPolygon <- function (x, y) {
     leafletProxy(x, data = y) %>%
-    addPolygons(data=y, fill = F ,opacity = 0.5, weight = 1)
+      addPolygons(data=y, fill = F ,opacity = 0.7, weight = 1)
   }
   
   addMyPolygon("basemap1",sf2)
   addMyPolygon("basemap2",sf2)
   addMyPolygon("basemap",sf2)
   
-  # manage dynamic bit of rasters to be added to main map
+  # raster base
+  observe({
+    pal <- colorNumeric(c("#8B0000","#EE4000", "#FFA500","#008B45"), 
+                        values(base_rasterLayer()), na.color = "transparent")
+    
+    leafletProxy("basemap1", data = c(base_rasterLayer(), sl())) %>%
+      clearShapes() %>% # does it clear old raster?
+      clearControls() %>% # necessary to remove old legend
+      addRasterImage(base_rasterLayer(),colors = pal, opacity = sl()) %>%
+      addLegend(pal = pal, values = values(base_rasterLayer()), 
+                title = varUnits()) # FIXME: Use % or CV% if relative selected
+  })
+  
+  # raster alternative
+  observe({
+    pal <- colorNumeric(c("#8B0000","#EE4000", "#FFA500","#008B45"), 
+                        values(alt_rasterLayer()), na.color = "transparent")
+    
+    leafletProxy("basemap2", data = c(alt_rasterLayer(), sl())) %>%
+      clearShapes() %>% # does it clear old raster?
+      clearControls() %>% # necessary to remove old legend
+      addRasterImage(alt_rasterLayer(),colors = pal, opacity = sl()) %>%
+      addLegend(pal = pal, values = values(alt_rasterLayer()), 
+                title = varUnits()) # FIXME: Use % or CV% if relative selected
+  })
+  
+  
+  # add raster difference
   observe({
     pal <- colorNumeric(c("#8B0000","#EE4000", "#FFA500","#008B45"), 
                         values(diff_rasterLayer()), na.color = "transparent")
     
-    # add region contour
-    
-    
-    
-    # raster 1
-    leafletProxy("basemap", data = c(diff_rasterLayer(),input$slider1)) %>%
+    leafletProxy("basemap", data = c(diff_rasterLayer(), sl())) %>%
       clearShapes() %>% # does it clear old raster?
       clearControls() %>% # necessary to remove old legend
-      addPolygons(data=sf2, fill = F ,opacity = 0.01, weight = 1) %>%
-      addRasterImage(diff_rasterLayer(),opacity = sl()) %>%
+      addRasterImage(diff_rasterLayer(),colors = pal, opacity = sl()) %>%
       addLegend(pal = pal, values = values(diff_rasterLayer()), 
                 title = ifelse((compSelection() == "abs"| 
                                   statSelection() == "av"), varUnits(), "(%)")) # FIXME: Use % or CV% if relative selected
   })
+  
+  
+
+  
   
   # Graph diff distrubution of raster DF (across pixels)
   output$plot7 <- renderPlot({
