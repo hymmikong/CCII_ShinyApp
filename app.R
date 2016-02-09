@@ -108,6 +108,26 @@ ui <- fluidPage(
       
       # tab 1
       tabPanel("Spatial analysis", 
+               leafletOutput("basemap1"),
+               p(),
+               leafletOutput("basemap2"),
+               # show map
+        #       leafletOutput("basemap"),
+        #       p(),
+        #       sliderInput("slider1", 
+        #                   label = h4("Raster transparency"), 
+        #                   min = 0, max = 1, value = 0.5),
+        #       p(),
+              # tableOutput("table1"), # tables for testing app
+              # tableOutput("table2"),
+              # tableOutput("table3"),
+        #       plotOutput("plot7"),
+        #       leafletOutput("map_result")
+        p()
+      ),
+      
+      # tab 2
+      tabPanel("Difference maps",
                # show map
                leafletOutput("basemap"),
                p(),
@@ -115,13 +135,12 @@ ui <- fluidPage(
                            label = h4("Raster transparency"), 
                            min = 0, max = 1, value = 0.5),
                p(),
-              # tableOutput("table1"), # tables for testing app
-              # tableOutput("table2"),
-              # tableOutput("table3"),
+               # tableOutput("table1"), # tables for testing app
+               # tableOutput("table2"),
+               # tableOutput("table3"),
                plotOutput("plot7"),
                leafletOutput("map_result")
       ),
-      
       
       # tab 2
       tabPanel("Factor analysis",
@@ -465,7 +484,7 @@ server <- function(input, output) {
   
   # Create a RASTER of the diff df ------------------------------------------ FIXME: Not working yet
   
-  newRaster_Layer <- reactive ({
+  diff_rasterLayer <- reactive ({
     df <- rasterDF_Diff()
     spg <- data.frame(df$thisLong, df$thisLat, df$diff)
     coordinates(spg) <- ~ df.thisLong + df.thisLat # Attention to variable names
@@ -477,7 +496,22 @@ server <- function(input, output) {
   
 
   # create main map------------------------
+  # base 1
+  output$basemap1 <- renderLeaflet({
+    leaflet() %>%
+      setView(lng = 176.272, lat = -38.0, zoom = 8) %>%
+      addTiles()
+  })
   
+  
+  # base 2
+  output$basemap2 <- renderLeaflet({
+    leaflet() %>%
+    setView(lng = 176.272, lat = -38.0, zoom = 8) %>%
+      addTiles()
+  })
+  
+  # base 3
   output$basemap <- renderLeaflet({
     leaflet() %>%
       setView(lng = 176.272, lat = -38.0, zoom = 8) %>%
@@ -494,13 +528,16 @@ server <- function(input, output) {
   # manage dynamic bit of rasters to be added to main map
   observe({
     pal <- colorNumeric(c("#8B0000","#EE4000", "#FFA500","#008B45"), 
-                        values(newRaster_Layer()), na.color = "transparent")
-    leafletProxy("basemap", data = c(newRaster_Layer(),input$slider1)) %>%
+                        values(diff_rasterLayer()), na.color = "transparent")
+    
+    # raster 1
+
+    leafletProxy("basemap", data = c(diff_rasterLayer(),input$slider1)) %>%
       clearShapes() %>% # does it clear old raster?
       clearControls() %>% # necessary to remove old legend
       addPolygons(data=sf2, fill = F ,opacity = 0.01, weight = 1) %>%
-      addRasterImage(newRaster_Layer(),opacity = sl()) %>%
-      addLegend(pal = pal, values = values(newRaster_Layer()), 
+      addRasterImage(diff_rasterLayer(),opacity = sl()) %>%
+      addLegend(pal = pal, values = values(diff_rasterLayer()), 
                 title = ifelse((compSelection() == "abs"| 
                                   statSelection() == "av"), varUnits(), "(%)")) # FIXME: Use % or CV% if relative selected
   })
