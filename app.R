@@ -607,7 +607,7 @@ server <- function(input, output) {
   
   # add raster difference
   observe({
-    pal <- colorNumeric(c("#8B0000","#EE4000", "#FFA500","#008B45"), 
+    pal <- colorNumeric(c("#ffffe5", "#fff7bc", "#fee391","#fec44f","#fe9929","#ec7014","#cc4c02","#8c2d04"), 
                         values(diff_rasterLayer()), na.color = "transparent")
     
     leafletProxy("basemap", data = c(diff_rasterLayer(), sl())) %>%
