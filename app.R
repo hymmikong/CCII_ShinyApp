@@ -462,6 +462,7 @@ server <- function(input, output) {
               col = "darkgrey",
               horizontal=TRUE,
               ylim=c(axesLimits_Pix()$ymin, axesLimits_Pix()$ymax),
+              xlab=paste0(mainVarSelec()," (", varUnits(),")"),
               pch = 20, cex = 3)
       points(clusters()$centers, pch = 4, cex = 4, lwd = 4) 
 
@@ -476,6 +477,7 @@ server <- function(input, output) {
          col = "darkgrey",
          breaks = bins,
          xlim=c(axesLimits_Pix()$ymin, axesLimits_Pix()$ymax),
+         xlab=paste0(mainVarSelec()," (", varUnits(),")"),
          pch = 20, cex = 3)
     }
     
@@ -490,10 +492,11 @@ server <- function(input, output) {
     if(input$graphType == "b") {
     
     boxplot(selectedDataPix_Alt()[2],
-      #      main= "Alternative",
+            main= " ",
             col = "darkgrey",
             horizontal=TRUE,
             ylim=c(axesLimits_Pix()$ymin, axesLimits_Pix()$ymax),
+            xlab=paste0(mainVarSelec()," (", varUnits(),")"),
             pch = 20, cex = 3)
     points(clusters()$centers, pch = 4, cex = 4, lwd = 4) 
     
@@ -507,6 +510,7 @@ server <- function(input, output) {
            col = "darkgrey",
            breaks = bins,
            xlim=c(axesLimits_Pix()$ymin, axesLimits_Pix()$ymax),
+           xlab=paste0(mainVarSelec()," (", varUnits(),")"),
            pch = 20, cex = 3)
     }
     
@@ -678,7 +682,8 @@ server <- function(input, output) {
       boxplot(as.numeric(unlist(x)),
               main=" ",
               horizontal=TRUE,
-              col = clusters()$cluster,
+              col = "darkgrey",
+              xlab=paste0(mainVarSelec()," (", varUnits(),")"),
               pch = 20, cex = 3)
       
     } else {
@@ -688,8 +693,9 @@ server <- function(input, output) {
       
       hist(as.numeric(unlist(x)),
            main=" ",
-           col = clusters()$cluster,
+           col = "darkgrey",
            breaks = bins,
+           xlab=paste0(mainVarSelec()," (", varUnits(),")"),
            pch = 20, cex = 3)
     }
     
