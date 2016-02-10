@@ -170,8 +170,10 @@ ui <- fluidPage(
                selectInput('symbFact', 'Select factor for symbols', names(allData),selected = names(allData)[[12]])
       ),
       
-      # tab 4 - Grid call analysis
+      # tab 4 - Grid cell analysis
       tabPanel("Grid-cell analysis", 
+               p(),
+               h4(tags$b("Graphs show the distribution of 20 year simulations within a grid-cell")),
                p(),
                selectInput('gc', 'Grid cell', as.character(unique(allData$Lat_Long))),
                h4(tags$b("Location in map")),
@@ -182,10 +184,13 @@ ui <- fluidPage(
                p(),
                plotOutput("plot3"),
                p(),
-               h4(tags$b("Alternative scenario")),
+          #     h4(tags$b("Alternative scenario")),
                p(),
-               plotOutput("plot4")
-              
+          #     plotOutput("plot4"),
+               p(),
+               h4(tags$b("Difference in this grid-cell")),
+               p(),
+               plotOutput("plot5")
                )
     )
   )
@@ -194,7 +199,6 @@ ui <- fluidPage(
 
 #-------------------------- THE SERVER -----------------------------------------------------
 
-# shinyServer(function(input, output) { # why some examples use this syntaxe instead?
 server <- function(input, output) {
   
   # Function to select stat type
@@ -249,9 +253,9 @@ server <- function(input, output) {
   })
   
   
-  # ----------------- Subset data for each specific analysis ---------------------------------
+  # DATAFRAME subset -----------------------------------------------------------------
   
-  # Raster data (summarised by pixel with average or CV%) --------------
+  # Raster dataframe (summarised by pixel with average or CV%) --------------
   
   # baseline scenario
   rasterDF_Base <- reactive({
@@ -353,7 +357,7 @@ server <- function(input, output) {
   })
   
   
-  # Pixel Data for graphing (filtered by lat-long)
+  # Pixel Data for graphing (filtered by lat-long) -----------
   
   # baseline
   selectedDataPix_Base <- reactive({
@@ -371,6 +375,7 @@ server <- function(input, output) {
           thisScenario == scn
       )
     allData[, c(input$xcol, mainVarSelec())]
+   # allData[, mainVarSelec()]
   })
   
   # Alternative
@@ -389,6 +394,7 @@ server <- function(input, output) {
       )
     
     allData[, c(input$xcol, mainVarSelec())]
+   # allData[, mainVarSelec()]
   })
   
   
@@ -403,7 +409,7 @@ server <- function(input, output) {
   })
   
   
-  # Draw graphs -----------------------------------------------------------
+  # GRAPHS 1 -----------------------------------------------------------
 
   # create axes limits for all graphs
   
@@ -428,7 +434,7 @@ server <- function(input, output) {
   })
   
   
-  # X Y graphic comparison of variables ------------
+  # X Y graphic comparison of variables----------
   
   # base graph
   output$plot1 <- renderPlot({
@@ -466,18 +472,21 @@ server <- function(input, output) {
     
   })
   
-  # Distribution graphs (within pixel) ------------
+  # Distribution graphs (within pixel)-------------
   
   # base graph
   output$plot3 <- renderPlot({
   
     par(mar = c(5.1, 4.1, 2, 1))
     
-    thisUnit <- ifelse((compSelection() == "rel"| statSelection() == 4), "%", varUnits())
+    x    <- as.numeric(unlist(selectedDataPix_Base()[2]))
+    
+   # thisUnit <- ifelse((compSelection() == "rel"| statSelection() == 4), "%", varUnits())
+    thisUnit <- varUnits()
     
     if(input$graphType == "b") {
       
-      boxplot(selectedDataPix_Base()[2],
+      boxplot(x,
               main=" ",
               col = "darkgrey",
               horizontal=TRUE,
@@ -488,11 +497,9 @@ server <- function(input, output) {
 
     } else {
     
-    x    <- as.numeric(unlist(selectedDataPix_Base()[2]))
     bins <- seq(min(x), max(x), length.out = input$bins + 1)
       
-      
-    hist(as.numeric(unlist(selectedDataPix_Base()[2])),
+    hist(x,
          main=" ",
          col = "darkgrey",
          breaks = bins,
@@ -509,11 +516,14 @@ server <- function(input, output) {
     
     par(mar = c(5.1, 4.1, 2, 1))
     
-    thisUnit <- ifelse((compSelection() == "rel"| statSelection() == 4), "%", varUnits()) # FIXME: remove code duplication
+    x    <- as.numeric(unlist(selectedDataPix_Alt()[2]))
+    
+   # thisUnit <- ifelse((compSelection() == "rel"| statSelection() == 4), "%", varUnits()) # FIXME: remove code duplication
+    thisUnit <- varUnits()
     
     if(input$graphType == "b") {
     
-    boxplot(selectedDataPix_Alt()[2],
+    boxplot(x,
             main= " ",
             col = "darkgrey",
             horizontal=TRUE,
@@ -524,10 +534,9 @@ server <- function(input, output) {
     
     } else {
       
-      x    <- as.numeric(unlist(selectedDataPix_Alt()[2]))
-      bins <- seq(min(x), max(x), length.out = input$bins + 1)
+            bins <- seq(min(x), max(x), length.out = input$bins + 1)
       
-      hist(as.numeric(unlist(selectedDataPix_Alt()[2])),
+      hist(x,
            main=" ",
            col = "darkgrey",
            breaks = bins,
@@ -539,8 +548,51 @@ server <- function(input, output) {
     
   })
   
+  # Differences within a gridcell
+  output$plot5 <- renderPlot({
+    
+    par(mar = c(5.1, 4.1, 2, 1))
+    
+    bas <-   data.frame(bas = as.numeric(unlist(selectedDataPix_Base()[2])))
+    alt <-   data.frame(alt = as.numeric(unlist(selectedDataPix_Alt()[2])))
+    
+    diff_abs <- alt - bas
+    diff_rel <- (alt-bas)/alt*100 
+    
+    # FIXME: Not cohercing to a vector
+    x  <- ifelse(compSelection() == "abs",diff_abs, diff_rel)
+    
+    thisUnit <- ifelse((compSelection() == "rel"| statSelection() == 4), "%", varUnits()) # FIXME: remove code duplication
+    
+    if(input$graphType == "b") {
+      
+      boxplot(x,
+              main= " ",
+              col = "darkgrey",
+              horizontal=TRUE,
+        #      ylim=c(min(min(bas,alt)), max(max(bas,alt))),
+              xlab=paste0("Difference in ", mainVarSelec()," (", thisUnit,")"),
+              pch = 20, cex = 3)
+      points(clusters()$centers, pch = 4, cex = 4, lwd = 4) 
+      
+    } else {
+      
+      bins <- seq(min(x), max(x), length.out = input$bins + 1)
+      
+      hist(x,
+           main=" ",
+           col = "darkgrey",
+           breaks = bins,
+           xlim=c(axesLimits_Pix()$ymin, axesLimits_Pix()$ymax),
+           xlab=paste0("Difference in ",mainVarSelec()," (", thisUnit,")"),
+           pch = 20, cex = 3)
+    }
+    
+    
+  })
+  
 
-  # Rasterise DFs for mapping ------------------------------------------ FIXME: Not working yet
+  # RASTERISE DFs ------------------------------------------ FIXME: Not fully working yet
   
   # FIXME: Can u set up a rasterMyDf function to avoid this code duplication?
   rasterMyDf <- function(x) {
@@ -594,7 +646,7 @@ server <- function(input, output) {
   })
   
 
-  # create main maps with output call ------------------------
+  # MAPPING ---------------------------------------------------
   
   content <- paste(sep = "<br/>",
                    "<b><a href='https://www.boprc.govt.nz/environment/rivers-and-drainage/kaituna-catchment-control-scheme/'>Kaituna catchment</a></b>",
@@ -611,13 +663,7 @@ server <- function(input, output) {
        # addPolygons(data=sf2, fill = F ,opacity = 0.7, weight = 5) %>%
         addTiles()  %>%
         addPopups(176.272, -38.0, content,
-                  options = popupOptions(closeButton = FALSE) ) %>%
-     #   addMarkers(176.272, -38.0, popup = ~htmlEscape(content)) %>%
-        addLayersControl(
-        #  baseGroups = c("OSM (default)", "Toner", "Toner Lite"),
-          overlayGroups = c("Kaituna catchment"),
-          options = layersControlOptions(collapsed = FALSE)
-        )
+                  options = popupOptions(closeButton = FALSE) ) #%>%
     })
   }
   
@@ -631,17 +677,6 @@ server <- function(input, output) {
   sl <- reactive ({
     input$slider1
   })
-  
-  # add polygon custom function
-  addMyPolygon <- function (x, y) {
-    leafletProxy(x, data = y) %>%
-      addPolygons(data=y, fill = F ,opacity = 0.7, weight = 2, group = "Kaituna catchment")
-  }
-  
-  addMyPolygon("basemap1",sf2)
-  addMyPolygon("basemap2",sf2)
-  addMyPolygon("basemap3",sf2)
-  addMyPolygon("basemap4",sf2)
   
   # raster base
   observe({
@@ -677,8 +712,7 @@ server <- function(input, output) {
                 title = varUnits()) # FIXME: Use % or CV% if relative selected
   })
   
-  
-  # add raster difference
+    # add raster difference
   observe({
     pal <- colorNumeric(c("#ffffe5", "#fff7bc", "#fee391","#fec44f","#fe9929","#ec7014","#cc4c02","#8c2d04"), 
                         values(diff_rasterLayer()), na.color = "transparent")
@@ -693,14 +727,41 @@ server <- function(input, output) {
                 title = thisTitle) # FIXME: Use % or CV% if relative selected
   })
   
+  # select point in grid-cell analysis
   
-  # create common legend
-  observe({
+#  selectPix <- eventReactive(input$gc, {
+  #  cbind(selectedDataPix_Base()[1,1], selectedDataPix_Base()[1,2])
     
-  })
+#  }, ignoreNULL = FALSE)
   
   
-  # Graph diff distrubution of raster DF (across pixels)
+#  observe({
+#    leafletProxy("basemap4", data = points())  %>%
+#      clearShapes() %>% # clears old raster
+#      clearControls() %>% # necessary to remove old legend
+#      addMarkers(selectPix())
+#  })
+  
+  
+    # add polygon custom function
+  addMyPolygon <- function (x, y) {
+    leafletProxy(x, data = y) %>%
+      addPolygons(data=y, fill = F ,opacity = 0.7, weight = 2, group = "Kaituna catchment") %>%       
+      addLayersControl(
+        overlayGroups = "Kaituna catchment",
+        options = layersControlOptions(collapsed = FALSE))
+  }
+  
+  addMyPolygon("basemap1",sf2)
+  addMyPolygon("basemap2",sf2)
+  addMyPolygon("basemap3",sf2)
+  addMyPolygon("basemap4",sf2)
+  
+  
+  # GRAPHS ---------------------------------------------------------------------
+  
+  
+  # Graph diff distrubution of raster DF (across grid cells)
   output$plot7 <- renderPlot({
     
     par(mar = c(5.1, 4.1, 2, 1))
@@ -733,8 +794,7 @@ server <- function(input, output) {
     
   })
   
-  
-  # Tables for testing
+    # Tables for testing
   
   # Table raster1
   output$table1 <- renderTable({
@@ -756,7 +816,7 @@ server <- function(input, output) {
   paste0("Variable unit is: ",varUnits())
   })  
   
-  # Download data ----------------------------- FIXME: file content is not as expected
+  # DOWNLOAD  ----------------------------- FIXME: file content is not as expected
   
   output$downloadData <- downloadHandler(
     filename = function() { paste(input$mainvar, '.txt', sep=' ') },
