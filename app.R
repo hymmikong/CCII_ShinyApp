@@ -553,14 +553,14 @@ server <- function(input, output) {
     
     par(mar = c(5.1, 4.1, 2, 1))
     
-    bas <-   data.frame(bas = as.numeric(unlist(selectedDataPix_Base()[2])))
-    alt <-   data.frame(alt = as.numeric(unlist(selectedDataPix_Alt()[2])))
+    bas <-   data.frame(thisVar = as.numeric(unlist(selectedDataPix_Base()[2])))
+    alt <-   data.frame(thisVar = as.numeric(unlist(selectedDataPix_Alt()[2])))
     
     diff_abs <- alt - bas
     diff_rel <- (alt-bas)/alt*100 
     
     # FIXME: Not cohercing to a vector
-    x  <- ifelse(compSelection() == "abs",diff_abs, diff_rel)
+    x  <- ifelse(compSelection() == "abs", diff_abs, diff_rel)
     
     thisUnit <- ifelse((compSelection() == "rel"| statSelection() == 4), "%", varUnits()) # FIXME: remove code duplication
     
@@ -577,13 +577,15 @@ server <- function(input, output) {
       
     } else {
       
+   
       bins <- seq(min(x), max(x), length.out = input$bins + 1)
       
+      # FIXME: invalid 'type' (list) of argument
       hist(x,
            main=" ",
            col = "darkgrey",
            breaks = bins,
-           xlim=c(axesLimits_Pix()$ymin, axesLimits_Pix()$ymax),
+        #   xlim=c(axesLimits_Pix()$ymin, axesLimits_Pix()$ymax),
            xlab=paste0("Difference in ",mainVarSelec()," (", thisUnit,")"),
            pch = 20, cex = 3)
     }
