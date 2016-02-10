@@ -67,9 +67,9 @@ ui <- fluidPage(
     radioButtons("stats", "Statistics:",
                  inline = TRUE,
                  c("Average" = "av","CV (%)" = "cv")),
-    radioButtons("comp", "Comparison method:",
+    radioButtons("comp", "Comparison method (diff maps):",
                  inline = TRUE,
-                 c("Absolute" = "abs","Relative" = "rel")),
+                 c("Absolute" = "abs","Relative (%)" = "rel")),
     
    # input scenario 1 (baseline)
     tags$hr(),
@@ -87,10 +87,15 @@ ui <- fluidPage(
    
    # graph controls
    tags$hr(),
-   h4(tags$b("Graphing details")),
+   h4(tags$b("Graphing set up")),
    radioButtons("graphType", "Select type of graph:",
                 inline = TRUE,
                 c("Box plot" = "b","Histogram" = "h")),
+   sliderInput("bins",
+               "Histogram number of bins:",
+               min = 1,
+               max = 20,
+               value = 5),
  
   # download controls
   tags$hr(),
@@ -161,7 +166,11 @@ ui <- fluidPage(
                p(),
                selectInput('gc', 'Grid cell', as.character(unique(allData$Lat_Long))),
                p(),
+               h4(tags$b("Reference scenario")),
+               p(),
                plotOutput("plot3"),
+               p(),
+               h4(tags$b("Alternative scenario")),
                p(),
                plotOutput("plot4")
               
@@ -203,7 +212,8 @@ server <- function(input, output) {
   varUnits <- reactive({
     varDetails <-  selectedVars_df %>%
       filter(variable == mainVarSelec())
-   paste0("(",as.character(varDetails[,"unit"]),")") 
+  # paste0("(",as.character(varDetails[,"unit"]),")") 
+    as.character(varDetails[,"unit"]) 
   })
   
   # select stats
@@ -385,6 +395,16 @@ server <- function(input, output) {
 
   # create axes limits for all graphs
   axesLimits <- reactive({
+    xmin <- min(min(selectedData_Base()[1]), min(selectedData_Alt()[1]))
+    xmax <- max(max(selectedData_Base()[1]), max(selectedData_Alt()[1]))
+    ymin <- min(min(selectedData_Base()[2]), min(selectedData_Alt()[2]))
+    ymax <- max(max(selectedData_Base()[2]), max(selectedData_Alt()[2]))
+    x <- data.frame(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax)
+    x
+  })
+  
+  
+  axesLimits_Pix <- reactive({
     xmin <- min(min(selectedDataPix_Base()[1]), min(selectedDataPix_Alt()[1]))
     xmax <- max(max(selectedDataPix_Base()[1]), max(selectedDataPix_Alt()[1]))
     ymin <- min(min(selectedDataPix_Base()[2]), min(selectedDataPix_Alt()[2]))
@@ -401,9 +421,9 @@ server <- function(input, output) {
     par(mar = c(5.1, 4.1, 2, 1))
     
     plot(selectedData_Base(),
-     #    main="Reference (baseline)",
+         main=" ",
         # title("Title", line = -2),
-         col = clusters()$cluster,
+         col = cluster_Alt()$cluster,
         xlim=c(axesLimits()$xmin, axesLimits()$xmax),
         ylim=c(axesLimits()$ymin, axesLimits()$ymax),
          pch = 20, cex = 3)
@@ -417,7 +437,7 @@ server <- function(input, output) {
     par(mar = c(5.1, 4.1, 2, 1))
     
     plot(selectedData_Alt(),
-       #  main="Alternative scenario",
+         main=" ",
        #  title(main ="Title", line = -2),
        xlim=c(axesLimits()$xmin, axesLimits()$xmax),
        ylim=c(axesLimits()$ymin, axesLimits()$ymax),
@@ -438,19 +458,24 @@ server <- function(input, output) {
     if(input$graphType == "b") {
       
       boxplot(selectedDataPix_Base()[2],
-              main="Baseline",
-              col = clusters()$cluster,
+              main=" ",
+              col = "darkgrey",
               horizontal=TRUE,
-              ylim=c(axesLimits()$ymin, axesLimits()$ymax),
+              ylim=c(axesLimits_Pix()$ymin, axesLimits_Pix()$ymax),
               pch = 20, cex = 3)
       points(clusters()$centers, pch = 4, cex = 4, lwd = 4) 
 
     } else {
     
+    x    <- as.numeric(unlist(selectedDataPix_Base()[2]))
+    bins <- seq(min(x), max(x), length.out = input$bins + 1)
+      
+      
     hist(as.numeric(unlist(selectedDataPix_Base()[2])),
-         main="Baseline",
-         col = clusters()$cluster,
-         xlim=c(axesLimits()$ymin, axesLimits()$ymax),
+         main=" ",
+         col = "darkgrey",
+         breaks = bins,
+         xlim=c(axesLimits_Pix()$ymin, axesLimits_Pix()$ymax),
          pch = 20, cex = 3)
     }
     
@@ -465,19 +490,23 @@ server <- function(input, output) {
     if(input$graphType == "b") {
     
     boxplot(selectedDataPix_Alt()[2],
-            main= "Alternative",
-            col = clusters()$cluster,
+      #      main= "Alternative",
+            col = "darkgrey",
             horizontal=TRUE,
-            ylim=c(axesLimits()$ymin, axesLimits()$ymax),
+            ylim=c(axesLimits_Pix()$ymin, axesLimits_Pix()$ymax),
             pch = 20, cex = 3)
     points(clusters()$centers, pch = 4, cex = 4, lwd = 4) 
     
     } else {
       
+      x    <- as.numeric(unlist(selectedDataPix_Alt()[2]))
+      bins <- seq(min(x), max(x), length.out = input$bins + 1)
+      
       hist(as.numeric(unlist(selectedDataPix_Alt()[2])),
-           main="Baseline",
-           col = clusters()$cluster,
-           xlim=c(axesLimits()$ymin, axesLimits()$ymax),
+           main=" ",
+           col = "darkgrey",
+           breaks = bins,
+           xlim=c(axesLimits_Pix()$ymin, axesLimits_Pix()$ymax),
            pch = 20, cex = 3)
     }
     
@@ -576,16 +605,23 @@ server <- function(input, output) {
   addMyPolygon("basemap2",sf2)
   addMyPolygon("basemap3",sf2)
   
+  
+
+  
   # raster base
   observe({
     pal <- colorNumeric(c("#8B0000","#EE4000", "#FFA500","#008B45"), 
                         values(base_rasterLayer()), na.color = "transparent")
     
+    
+    valRasters <- c(rasterDF_Base()$thisVar, rasterDF_Alt()$thisVar)
+    
     leafletProxy("basemap1", data = c(base_rasterLayer(), sl())) %>%
       clearShapes() %>% # does it clear old raster?
       clearControls() %>% # necessary to remove old legend
       addRasterImage(base_rasterLayer(),colors = pal, opacity = sl()) %>%
-      addLegend(pal = pal, values = values(base_rasterLayer()), 
+    #  addLegend(pal = pal, values = values(base_rasterLayer()),
+      addLegend(pal = pal, values = valRasters, 
                 title = varUnits()) # FIXME: Use % or CV% if relative selected
   })
   
@@ -594,11 +630,15 @@ server <- function(input, output) {
     pal <- colorNumeric(c("#8B0000","#EE4000", "#FFA500","#008B45"), 
                         values(alt_rasterLayer()), na.color = "transparent")
     
+    
+    valRasters <- c(rasterDF_Base()$thisVar, rasterDF_Alt()$thisVar)
+    
     leafletProxy("basemap2", data = c(alt_rasterLayer(), sl())) %>%
       clearShapes() %>% # does it clear old raster?
       clearControls() %>% # necessary to remove old legend
       addRasterImage(alt_rasterLayer(),colors = pal, opacity = sl()) %>%
-      addLegend(pal = pal, values = values(alt_rasterLayer()), 
+    #  addLegend(pal = pal, values = values(alt_rasterLayer()), 
+                addLegend(pal = pal, values = valRasters, # FIXME: legend is rescaling
                 title = varUnits()) # FIXME: Use % or CV% if relative selected
   })
   
@@ -636,16 +676,20 @@ server <- function(input, output) {
     if(input$graphType == "b") {
       
       boxplot(as.numeric(unlist(x)),
-              main="Distribution of differences between scenarios",
+              main=" ",
               horizontal=TRUE,
               col = clusters()$cluster,
               pch = 20, cex = 3)
       
     } else {
       
+      x    <- as.numeric(unlist(selectedDataPix_Base()[2]))
+      bins <- seq(min(x), max(x), length.out = input$bins + 1)
+      
       hist(as.numeric(unlist(x)),
-           main="Distribution of differences between scenarios",
+           main=" ",
            col = clusters()$cluster,
+           breaks = bins,
            pch = 20, cex = 3)
     }
     
@@ -671,7 +715,7 @@ server <- function(input, output) {
   
   # Show variable name
   output$text1 <- renderText({ 
-  varUnits()
+  paste0("Variable unit is: ",varUnits())
   })  
   
   # Download data ----------------------------- FIXME: file content is not as expected
