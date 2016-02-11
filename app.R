@@ -888,7 +888,7 @@ server <- function(input, output) {
 
    filename = function() { paste(input$mainvar, input$fileType, sep=".") },
   
-    #filename = paste0(paste0(input$mainvar, ext)),
+ #  filename = function() {paste0(input$mainvar,"_",input$compSelection,"_",input$statSelection,".",input$fileType) },
 
     content = function(file) {
       
