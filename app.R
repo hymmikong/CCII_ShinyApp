@@ -63,6 +63,8 @@ ui <- fluidPage(
     
     # Show selection
     textOutput("text1"),
+   
+   # textOutput("text2"), # test only
 
     # input stats
     tags$hr(),
@@ -213,6 +215,14 @@ server <- function(input, output) {
      cv <- round((sd(x)/mean(x))*100,1)
   }
   
+  # function to find clossest value
+  closestValue <- function (x, vec) {
+            intervalNo <- findInterval(x, vec)
+            lowerValue <- vec[pmax(1, intervalNo)]
+            upperValue <- vec[pmin(length(vec), intervalNo+1)]
+            ifelse(x - lowerValue < upperValue - x, lowerValue, upperValue)
+        }
+  
   
   # -------------- Reactive expressions to filter data of BASE raster ------------------
   
@@ -325,14 +335,12 @@ server <- function(input, output) {
   # select full (all years) dataset of selected variable (i.e. Y axes, the variable rasterised)
   selectedData_Base <- reactive({
     
-    #gc <- input$gc
     crop <- input$crop
     soil <- input$soil
     scn <- input$scn
     
     allData <- allData %>%
-      filter(  #Lat_Long == gc &
-                 CurrentCrop == crop & 
+      filter(   CurrentCrop == crop & 
                 thisSoil == soil  &
                thisScenario == scn
               )
@@ -359,18 +367,43 @@ server <- function(input, output) {
   
   # Pixel Data for graphing (filtered by lat-long) -----------
   
+  # select lat / long approximate coordinates by click
+  coordSelectBaseMap4 <- reactive({
+    lat <-  as.numeric(as.character(input$basemap4_click$lat))
+    lng <-  as.numeric(as.character(input$basemap4_click$lng))
+    
+    lat.vec <- sort(as.numeric(unique(allData$thisLat)))
+    lng.vec <- sort(as.numeric(unique(allData$thisLong)))
+    
+    # FIXME: closest value needs to change to approx to deal with NAs
+    lat.slc <- closestValue(lat,lat.vec)
+    lng.slc <- closestValue(lng,lng.vec)
+    
+    # lat.slc <- approx(lat,y = NULL,lat.vec, method="constant",rule = 2, f=1)
+    # lng.slc <- approx(lng,y = NULL, lng.vec,  method="constant",rule = 2, f=1)
+    
+    x <- c(lat.slc,lng.slc)
+    return(x)
+    
+  })
+  
+  
   # baseline
   selectedDataPix_Base <- reactive({
     
     # Due to dplyr issue #318, we need temp variables for input values
-    gc <- input$gc
+   # gc <- input$gc
+    lat <- coordSelectBaseMap4()[1]
+    lng <- coordSelectBaseMap4()[2]
     crop <- input$crop
     soil <- input$soil
     scn <- input$scn
     
     allData <- allData %>%
-      filter( Lat_Long == gc &
-        CurrentCrop == crop & 
+      filter( #Lat_Long == gc &
+          thisLat == lat &
+          thisLong == lng &
+          CurrentCrop == crop & 
           thisSoil == soil  &
           thisScenario == scn
       )
@@ -381,13 +414,17 @@ server <- function(input, output) {
   # Alternative
   selectedDataPix_Alt <- reactive({
     
-    gc <- input$gc
+   # gc <- input$gc
+    lat <- coordSelectBaseMap4()[1]
+    lng <- coordSelectBaseMap4()[2]
     crop2 <- input$crop2
     soil2 <- input$soil2
     scn2 <- input$scn2
     
     allData <- allData %>%
-      filter( Lat_Long == gc & # Note that's the same lat/long for both graphs
+      filter( #Lat_Long == gc & # Note that's the same lat/long for both graphs
+                thisLat == lat &
+                thisLong == lng &
                 CurrentCrop == crop2 & 
                 thisSoil == soil2  &
                 thisScenario == scn2
@@ -396,6 +433,7 @@ server <- function(input, output) {
     allData[, c(input$xcol, mainVarSelec())]
    # allData[, mainVarSelec()]
   })
+  
   
   
   # Cluster analysis --------------------------------------------------
@@ -663,9 +701,10 @@ server <- function(input, output) {
       leaflet() %>%
         setView(lng = 176.272, lat = -38.0, zoom = 9) %>%
        # addPolygons(data=sf2, fill = F ,opacity = 0.7, weight = 5) %>%
-        addTiles()  %>%
-        addPopups(176.272, -38.0, content,
-                  options = popupOptions(closeButton = FALSE) ) #%>%
+        addTiles() # %>%
+      #  addCircleMarkers(lat = -38.0, lng = 176.272, radius = 10) %>%
+      #  addPopups(176.272, -38.0, content,
+      #            options = popupOptions(closeButton = FALSE) ) #%>%
     })
   }
   
@@ -691,7 +730,7 @@ server <- function(input, output) {
     leafletProxy("basemap1", data = c(base_rasterLayer(), sl())) %>%
       clearShapes() %>% 
       clearControls() %>% # necessary to remove old legend
-      addRasterImage(base_rasterLayer(),colors = pal, opacity = sl()) %>%
+      addRasterImage(base_rasterLayer(),colors = pal, opacity = sl(), layerId = "rasterBase") %>%
     #  addLegend(pal = pal, values = values(base_rasterLayer()),
       addLegend(pal = pal, values = valRasters, 
                 title = varUnits()) # FIXME: Use % or CV% if relative selected
@@ -729,22 +768,7 @@ server <- function(input, output) {
                 title = thisTitle) # FIXME: Use % or CV% if relative selected
   })
   
-  # select point in grid-cell analysis
-  
-#  selectPix <- eventReactive(input$gc, {
-  #  cbind(selectedDataPix_Base()[1,1], selectedDataPix_Base()[1,2])
-    
-#  }, ignoreNULL = FALSE)
-  
-  
-#  observe({
-#    leafletProxy("basemap4", data = points())  %>%
-#      clearShapes() %>% # clears old raster
-#      clearControls() %>% # necessary to remove old legend
-#      addMarkers(selectPix())
-#  })
-  
-  
+
     # add polygon custom function
   addMyPolygon <- function (x, y) {
     leafletProxy(x, data = y) %>%
@@ -816,7 +840,27 @@ server <- function(input, output) {
   # Show variable name
   output$text1 <- renderText({ 
   paste0("Variable unit is: ",varUnits())
+    
   })  
+  
+  # Show variable name (test only)
+  output$text2 <- renderText({ 
+    lat <-  as.numeric(as.character(input$basemap4_click$lat))
+    lng <-  as.numeric(as.character(input$basemap4_click$lng))
+    
+    lat.vec <- sort(as.numeric(unique(allData$thisLat)))
+    lng.vec <- sort(as.numeric(unique(allData$thisLong)))
+    
+    # FIXME: closest value needs to change to approx to deal with NAs
+    lat.slc <- closestValue(lat,lat.vec)
+    lng.slc <- closestValue(lng,lng.vec)
+    
+   # lat.slc <- approx(lat,y = NULL,lat.vec, method="constant",rule = 2, f=1)
+   # lng.slc <- approx(lng,y = NULL, lng.vec,  method="constant",rule = 2, f=1)
+    
+    paste0(lat.slc," " ,lng.slc)
+    
+  }) 
   
   # DOWNLOAD  ----------------------------- FIXME: file content is not as expected
   
@@ -831,6 +875,14 @@ server <- function(input, output) {
       write.table(df, file, row.names=F)
     }
   )
+  
+  
+  # SHOW data pir pixel when map is clicked-----------------------------
+  #FIXME: Not yet working
+
+  
+  
+  
 }
 
 shinyApp(ui = ui, server = server)
