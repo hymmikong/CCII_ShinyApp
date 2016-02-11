@@ -882,14 +882,31 @@ server <- function(input, output) {
   # DOWNLOAD  ----------------------------- FIXME: file content is not as expected
   
   output$downloadData <- downloadHandler(
-    filename = function() { paste(input$mainvar, '.txt', sep=' ') },
+    filename = function() { paste(input$mainvar, '.tif', sep=' ') },
    # filename = "test",
     content = function(file) {
       # FIXME: outputting individul values within the summary function (quick fix with new df)
       df <- data.frame(lat = rasterDF_Diff()$thisLat, lon = rasterDF_Diff()$thisLong, Difference = rasterDF_Diff()$thisVar)
       thisHeader <- paste0("#",input$mainvar," ",varUnits()," ", as.character(statSelection()))
       # FIME: Add header with meta-data
-      write.table(df, file, row.names=F)
+     # writeLines(c("Hello","World"), file(file))
+      #write.table(df, file, row.names=F)
+      
+     # save as raster
+      r <- diff_rasterLayer()
+      proj4string(r) <- "+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"
+      
+      res <- writeRaster(r, filename=file, format="GTiff", overwrite=TRUE)
+      
+      # Show the corresponding output filename
+      print(res@file@name)
+      
+      # Rename it to the correct filename
+      file.rename(res@file@name, file)
+      
+      
+      
+      
     }
   )
   
