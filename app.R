@@ -105,8 +105,9 @@ ui <- fluidPage(
   h4(tags$b("Download selected data")),
   downloadButton("downloadData", "Download data"),
   p(),
-  radioButtons("filetype", "File type:",
-              choices = c("csv (table)", "tif (raster image)"))
+  radioButtons("fileType", "Select type of file:",
+               inline = TRUE,
+               c("Text" = "txt","GeoTiff" = "tif"))
   ),
   
   # Main panel details
@@ -882,16 +883,27 @@ server <- function(input, output) {
   # DOWNLOAD  ----------------------------- FIXME: file content is not as expected
   
   output$downloadData <- downloadHandler(
-    filename = function() { paste(input$mainvar, '.tif', sep=' ') },
-   # filename = "test",
+    
+   # ext <- ifelse(input$fileType == "txt",".txt",".tif"),
+
+   filename = function() { paste(input$mainvar, input$fileType, sep=".") },
+  
+    #filename = paste0(paste0(input$mainvar, ext)),
+
     content = function(file) {
-      # FIXME: outputting individul values within the summary function (quick fix with new df)
+      
       df <- data.frame(lat = rasterDF_Diff()$thisLat, lon = rasterDF_Diff()$thisLong, Difference = rasterDF_Diff()$thisVar)
+
+      if(input$fileType == "txt") {
+      
       thisHeader <- paste0("#",input$mainvar," ",varUnits()," ", as.character(statSelection()))
       # FIME: Add header with meta-data
      # writeLines(c("Hello","World"), file(file))
-      #write.table(df, file, row.names=F)
+      write.table(df, file, row.names=F)
+    #  write.csv(df, file ,row.names=F)
       
+      } else {
+        
      # save as raster
       r <- diff_rasterLayer()
       proj4string(r) <- "+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"
@@ -905,7 +917,7 @@ server <- function(input, output) {
       file.rename(res@file@name, file)
       
       
-      
+      }
       
     }
   )
