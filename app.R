@@ -64,8 +64,6 @@ ui <- fluidPage(
     # Show selection
     textOutput("text1"),
    
-   # textOutput("text2"), # test only
-
     # input stats
     tags$hr(),
     h4(tags$b("Calculation details")),
@@ -175,12 +173,14 @@ ui <- fluidPage(
       # tab 4 - Grid cell analysis
       tabPanel("Grid-cell analysis", 
                p(),
-               h4(tags$b("Graphs show the distribution of 20 year simulations within a grid-cell")),
+           #    h4(tags$b("Graphs show the distribution of 20 year simulations within a grid-cell")),
                p(),
-               selectInput('gc', 'Grid cell', as.character(unique(allData$Lat_Long))),
-               h4(tags$b("Location in map")),
+          #     selectInput('gc', 'Grid cell', as.character(unique(allData$Lat_Long))),
+               h5(tags$b("Click in the location of interest")),
                p(),
                leafletOutput("basemap4"),
+               p(),
+               h4(tags$b(textOutput("text2")),align = "center"), # lat/long
                p(),
                h4(tags$b("Reference scenario")),
                p(),
@@ -190,7 +190,7 @@ ui <- fluidPage(
                p(),
           #     plotOutput("plot4"),
                p(),
-               h4(tags$b("Difference in this grid-cell")),
+               h4(tags$b("Difference between scenarios")),
                p(),
                plotOutput("plot5")
                )
@@ -595,7 +595,7 @@ server <- function(input, output) {
     alt <-   data.frame(thisVar = as.numeric(unlist(selectedDataPix_Alt()[2])))
     
     diff_abs <- alt - bas
-    diff_rel <- (alt-bas)/alt*100 
+    diff_rel <- (alt-mean(bas$thisVar))/mean(bas$thisVar)*100 # (alt-bas)/bas*100 
     
     # FIXME: Not cohercing to a vector
     x  <- ifelse(compSelection() == "abs", diff_abs, diff_rel)
@@ -768,6 +768,23 @@ server <- function(input, output) {
                 title = thisTitle) # FIXME: Use % or CV% if relative selected
   })
   
+  
+  # add raster to base 4 (FIXME: temporary test)
+  observe({
+    pal <- colorNumeric(c("#8B0000","#EE4000", "#FFA500","#008B45"), 
+                        values(base_rasterLayer()), na.color = "transparent")
+    
+    
+    valRasters <- c(rasterDF_Base()$thisVar, rasterDF_Alt()$thisVar)
+    
+    leafletProxy("basemap4", data = c(base_rasterLayer(), sl())) %>%
+      clearShapes() %>% 
+      clearControls() %>% # necessary to remove old legend
+      addRasterImage(base_rasterLayer(),colors = pal, opacity = sl(), layerId = "rasterBase") %>%
+      #  addLegend(pal = pal, values = values(base_rasterLayer()),
+      addLegend(pal = pal, values = valRasters, 
+                title = varUnits()) # FIXME: Use % or CV% if relative selected
+  })
 
     # add polygon custom function
   addMyPolygon <- function (x, y) {
@@ -858,7 +875,7 @@ server <- function(input, output) {
    # lat.slc <- approx(lat,y = NULL,lat.vec, method="constant",rule = 2, f=1)
    # lng.slc <- approx(lng,y = NULL, lng.vec,  method="constant",rule = 2, f=1)
     
-    paste0(lat.slc," " ,lng.slc)
+    paste0("Selected grid-cell has Latitude: ", lat.slc," Longitude: " ,lng.slc)
     
   }) 
   
