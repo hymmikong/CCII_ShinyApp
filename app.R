@@ -191,7 +191,7 @@ ui <- fluidPage(
                p(),
           #     plotOutput("plot4"),
                p(),
-               h4(tags$b("Difference between scenarios")),
+               h4(tags$b("Difference for alternative scenarios")),
                p(),
                plotOutput("plot5")
                )
@@ -702,7 +702,11 @@ server <- function(input, output) {
       leaflet() %>%
         setView(lng = 176.272, lat = -38.0, zoom = 9) %>%
        # addPolygons(data=sf2, fill = F ,opacity = 0.7, weight = 5) %>%
-        addTiles() # %>%
+        addTiles()  %>%
+        addPolygons(data=sf2, fill = F ,opacity = 0.7, weight = 2, group = "Catchment Borders") %>%       
+        addLayersControl(
+          overlayGroups = c("Catchment Borders","Rasters"),
+          options = layersControlOptions(collapsed = FALSE))
       #  addCircleMarkers(lat = -38.0, lng = 176.272, radius = 10) %>%
       #  addPopups(176.272, -38.0, content,
       #            options = popupOptions(closeButton = FALSE) ) #%>%
@@ -729,9 +733,9 @@ server <- function(input, output) {
     valRasters <- c(rasterDF_Base()$thisVar, rasterDF_Alt()$thisVar)
     
     leafletProxy("basemap1", data = c(base_rasterLayer(), sl())) %>%
-      clearShapes() %>% 
+      clearGroup(group="Rasters") %>%
       clearControls() %>% # necessary to remove old legend
-      addRasterImage(base_rasterLayer(),colors = pal, opacity = sl(), layerId = "rasterBase") %>%
+      addRasterImage(base_rasterLayer(),colors = pal, opacity = sl(), group = "Rasters") %>%
     #  addLegend(pal = pal, values = values(base_rasterLayer()),
       addLegend(pal = pal, values = valRasters, 
                 title = varUnits()) # FIXME: Use % or CV% if relative selected
@@ -746,9 +750,9 @@ server <- function(input, output) {
     valRasters <- c(rasterDF_Base()$thisVar, rasterDF_Alt()$thisVar)
     
     leafletProxy("basemap2", data = c(alt_rasterLayer(), sl())) %>%
-      clearShapes() %>% 
+      clearGroup(group="Rasters") %>% 
       clearControls() %>% # necessary to remove old legend
-      addRasterImage(alt_rasterLayer(),colors = pal, opacity = sl()) %>%
+      addRasterImage(alt_rasterLayer(),colors = pal, opacity = sl(), group = "Rasters") %>%
     #  addLegend(pal = pal, values = values(alt_rasterLayer()), 
                 addLegend(pal = pal, values = valRasters, # FIXME: legend is rescaling
                 title = varUnits()) # FIXME: Use % or CV% if relative selected
@@ -762,9 +766,9 @@ server <- function(input, output) {
     thisTitle <- ifelse((compSelection() == "rel"| statSelection() == 4), "(%)", varUnits()) # FIXME: the use of int for statSel is not intuitive
     
     leafletProxy("basemap3", data = c(diff_rasterLayer(), sl())) %>%
-      clearShapes() %>% # clears old raster
+      clearGroup(group="Rasters") %>%
       clearControls() %>% # necessary to remove old legend
-      addRasterImage(diff_rasterLayer(),colors = pal, opacity = sl()) %>%
+      addRasterImage(diff_rasterLayer(),colors = pal, opacity = sl(), group = "Rasters") %>%
       addLegend(pal = pal, values = values(diff_rasterLayer()), 
                 title = thisTitle) # FIXME: Use % or CV% if relative selected
   })
@@ -781,7 +785,7 @@ server <- function(input, output) {
     leafletProxy("basemap4", data = c(base_rasterLayer(), sl())) %>%
       clearShapes() %>% 
       clearControls() %>% # necessary to remove old legend
-      addRasterImage(base_rasterLayer(),colors = pal, opacity = sl(), layerId = "rasterBase") %>%
+      addRasterImage(base_rasterLayer(),colors = pal, opacity = sl(), group = "Rasters") %>%
       #  addLegend(pal = pal, values = values(base_rasterLayer()),
       addLegend(pal = pal, values = valRasters, 
                 title = varUnits()) # FIXME: Use % or CV% if relative selected
@@ -790,16 +794,16 @@ server <- function(input, output) {
     # add polygon custom function
   addMyPolygon <- function (x, y) {
     leafletProxy(x, data = y) %>%
-      addPolygons(data=y, fill = F ,opacity = 0.7, weight = 2, group = "Kaituna catchment") %>%       
+      addPolygons(data=y, fill = F ,opacity = 0.7, weight = 2, group = "Catchment Borders") %>%       
       addLayersControl(
         overlayGroups = "Kaituna catchment",
         options = layersControlOptions(collapsed = FALSE))
   }
   
-  addMyPolygon("basemap1",sf2)
-  addMyPolygon("basemap2",sf2)
-  addMyPolygon("basemap3",sf2)
-  addMyPolygon("basemap4",sf2)
+ # addMyPolygon("basemap1",sf2)
+ # addMyPolygon("basemap2",sf2)
+ # addMyPolygon("basemap3",sf2)
+ # addMyPolygon("basemap4",sf2)
   
   
   # GRAPHS ---------------------------------------------------------------------
