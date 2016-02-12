@@ -779,13 +779,17 @@ server <- function(input, output) {
     pal <- colorNumeric(c("#8B0000","#EE4000", "#FFA500","#008B45"), 
                         values(base_rasterLayer()), na.color = "transparent")
     
+    lng <- ifelse(is.null(input$basemap4_click$lng), 178,input$basemap4_click$lng)
+    lat <- ifelse(is.null(input$basemap4_click$lat), -38,input$basemap4_click$lat)
     
     valRasters <- c(rasterDF_Base()$thisVar, rasterDF_Alt()$thisVar)
     
     leafletProxy("basemap4", data = c(base_rasterLayer(), sl())) %>%
-      clearShapes() %>% 
+      clearGroup(group="Rasters") %>%
+      clearMarkers() %>%
       clearControls() %>% # necessary to remove old legend
       addRasterImage(base_rasterLayer(),colors = pal, opacity = sl(), group = "Rasters") %>%
+      addMarkers(lng,lat) %>%
       #  addLegend(pal = pal, values = values(base_rasterLayer()),
       addLegend(pal = pal, values = valRasters, 
                 title = varUnits()) # FIXME: Use % or CV% if relative selected
