@@ -73,6 +73,12 @@ ui <- fluidPage(
     radioButtons("comp", "Comparison method (diff maps):",
                  inline = TRUE,
                  c("Absolute" = "abs","Relative (%)" = "rel")),
+   
+   # raster transparency
+   p(),
+   sliderInput("slider1", 
+               label = h4(tags$b("Raster transparency")), 
+               min = 0, max = 1, value = 0.5),
     
    # input scenario 1 (baseline)
     tags$hr(),
@@ -135,10 +141,6 @@ ui <- fluidPage(
                p(),
                h4(tags$b("Differences between selected scenarios")),
                leafletOutput("basemap3"),
-               p(),
-               sliderInput("slider1", 
-                           label = h4("Raster transparency"), 
-                           min = 0, max = 1, value = 0.5),
                p(),
                # tableOutput("table1"), # tables for testing app
                # tableOutput("table2"),
