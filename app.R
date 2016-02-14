@@ -27,6 +27,9 @@ varList <- read.csv("C:\\GitHubRepos\\CCII_ShinyApp\\data\\variableNames.csv", h
 selectedVars_df <- varList %>%
   filter(include == "yes")
 
+all.factors <- varList %>%
+  filter(is.factor == "yes")
+
 varNames <- as.character(selectedVars_df$variable)
 
 # find col positions that hold the variables of interest in the raw df
@@ -192,13 +195,13 @@ ui <- fluidPage(
                    p(),
                    plotOutput("plot1"), 
                    p(),
-                   h4(tags$b("Alternative scenario")),
+               #    h4(tags$b("Alternative scenario")),
                    p(),
-                   plotOutput("plot2"),
+                #   plotOutput("plot2"),
                    p(),
-                   selectInput('ColFact', 'Select factor for colour', names(allData),selected = names(allData)[[12]]),
-                   p(),
-                   selectInput('symbFact', 'Select factor for symbols', names(allData),selected = names(allData)[[12]])
+              #     selectInput('colFacet', 'Select factor for colour', names(allData),selected = names(allData)[[12]]),
+                   p()
+               #    selectInput('symFacet', 'Select factor for symbols', names(allData),selected = names(allData)[[12]])
           )
           
     )
@@ -400,14 +403,14 @@ server <- function(input, output) {
   selectedDataPix_Base <- reactive({
    
     # values before click # FIXME: not working yet: need to start from selected map
-    if(is.null(coordSelectBaseMap4()[1])) {
+    if(is.null(as.numeric(coordSelectBaseMap4()))) {
       lat <- -37.925
       lng <- 176.275
     } else {
       lat <- coordSelectBaseMap4()[1]
       lng <- coordSelectBaseMap4()[2]
     }
-    
+  
     # Due to dplyr issue #318, we need temp variables for input values
    # gc <- input$gc
    # lat <- coordSelectBaseMap4()[1]
@@ -431,8 +434,8 @@ server <- function(input, output) {
   # Alternative
   selectedDataPix_Alt <- reactive({
     
-    # values before click
-    if(is.null(coordSelectBaseMap4()[1])) {
+    # values before click # FIXME: not working yet
+    if(is.null(as.numeric(coordSelectBaseMap4()))) {
       lat <- -37.925
       lng <- 176.275
     } else {
@@ -503,35 +506,48 @@ server <- function(input, output) {
   output$plot1 <- renderPlot({
     par(mar = c(5.1, 4.1, 2, 1))
     
-    # If no zipcodes are in view, don't plot
-    if (is.character(selectedData_Base())) # FIXME: needs to know x and y ?
+    if (is.character(selectedData_Base()))
       return(NULL)
     
-    plot(selectedData_Base(),
-         main=" ",
+  #  plot(selectedData_Base(),
+  #       main=" ",
         # title("Title", line = -2),
-         col = cluster_Alt()$cluster,
-        xlim=c(axesLimits()$xmin, axesLimits()$xmax),
-        ylim=c(axesLimits()$ymin, axesLimits()$ymax),
-         pch = 20, cex = 3)
-    points(clusters()$centers, pch = 4, cex = 4, lwd = 4) 
+  #       col = cluster_Alt()$cluster,
+  #      xlim=c(axesLimits()$xmin, axesLimits()$xmax),
+ #       ylim=c(axesLimits()$ymin, axesLimits()$ymax),
+  #       pch = 20, cex = 3)
+  #  points(clusters()$centers, pch = 4, cex = 4, lwd = 4) 
     
-
+    df_bas <- selectedData_Base()
+    df_bas$scn <- "base"
+    df_alt <- selectedData_Alt()
+    df_alt$scn <- "alt"
+    
+    df_merge <- rbind(df_bas,df_alt)
+    
+ #   ggplot(data=selectedData_Base()) + geom_point(aes_string(x=input$xcol, y=mainVarSelec()))
+    ggplot(data=df_merge) + 
+      geom_point(aes_string(x=input$xcol, y=mainVarSelec(), colour = as.factor(df_merge$scn)) #+
+                 #  theme(legend.position = c(0.9, 0.9))) # FIXME: not able to get rid of legend yet
+      )
     })
   
   # alternative graph
   output$plot2 <- renderPlot({
     par(mar = c(5.1, 4.1, 2, 1))
     
-    plot(selectedData_Alt(),
-         main=" ",
+#    plot(selectedData_Alt(),
+#         main=" ",
        #  title(main ="Title", line = -2),
-       xlim=c(axesLimits()$xmin, axesLimits()$xmax),
-       ylim=c(axesLimits()$ymin, axesLimits()$ymax),
-         col = cluster_Alt()$cluster,
-         pch = 20, cex = 3)
-    points(cluster_Alt()$centers, pch = 4, cex = 4, lwd = 4) 
+#       xlim=c(axesLimits()$xmin, axesLimits()$xmax),
+ #      ylim=c(axesLimits()$ymin, axesLimits()$ymax),
+#         col = cluster_Alt()$cluster,
+ #        pch = 20, cex = 3)
+ #   points(cluster_Alt()$centers, pch = 4, cex = 4, lwd = 4) 
     
+    ggplot(data=selectedData_Alt()) + 
+      geom_point(aes_string(x=input$xcol, y=mainVarSelec())) 
+   #   facet_grid(input$colFacet ~ input.symFacet) # FIXME: the df has to bring all factors
     
   })
   
@@ -676,7 +692,7 @@ server <- function(input, output) {
   # rasterise DFs with custumised function
  # base_rasterLayer <- rasterMyDf (rasterDF_Base())
  # base_rasterLayer <- rasterMyDf (rasterDF_Alt())
-  #diff_rasterLayer <- rasterMyDf (rasterDF_Diff()) # FIXME: This removes reactivity to layer change
+  #diff_rasterLayer <- rasterMyDf (rasterDF_Diff()) # FIXME: This removes reactivity to layer change - TRY again now
   
   
   base_rasterLayer <- reactive ({
@@ -950,13 +966,6 @@ server <- function(input, output) {
       
     }
   )
-  
-  
-  # SHOW data pir pixel when map is clicked-----------------------------
-  #FIXME: Not yet working
-
-  
-  
   
 }
 
