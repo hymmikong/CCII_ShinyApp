@@ -122,7 +122,7 @@ ui <- fluidPage(
     # First tab
     tabsetPanel(
       
-      # tab 1 - Spatial analysis
+      # tab - Spatial analysis
       tabPanel("Spatial analysis", 
                p(),
                h4(tags$b("Reference scenario")),
@@ -135,7 +135,7 @@ ui <- fluidPage(
         p()
       ),
       
-      # tab 2 - Difference map analysis
+      # tab - Difference map analysis
       tabPanel("Difference maps",
                # show map
                p(),
@@ -149,31 +149,8 @@ ui <- fluidPage(
                leafletOutput("map_result")
       ),
       
-      # tab 3 - Factor analysis
-      tabPanel("Factor analysis",
-               # input graphing details
-               p(),
-               h4(tags$b("Relationship between output variables")),
-               p(),
-               p(),
-               selectInput('xcol', 'Select driving variable (X axes)', names(allData),selected = names(allData)[[12]]),
-               p(),
-               numericInput('clusters', 'Cluster count', 3, min = 1, max = 9),
-               p(),
-               h4(tags$b("Reference scenario")),
-               p(),
-               plotOutput("plot1"), 
-               p(),
-               h4(tags$b("Alternative scenario")),
-               p(),
-               plotOutput("plot2"),
-               p(),
-               selectInput('ColFact', 'Select factor for colour', names(allData),selected = names(allData)[[12]]),
-               p(),
-               selectInput('symbFact', 'Select factor for symbols', names(allData),selected = names(allData)[[12]])
-      ),
-      
-      # tab 4 - Grid cell analysis
+
+      # tab - Grid cell analysis
       tabPanel("Grid-cell analysis", 
                p(),
            #    h4(tags$b("Graphs show the distribution of 20 year simulations within a grid-cell")),
@@ -196,7 +173,34 @@ ui <- fluidPage(
                h4(tags$b("Difference for alternative scenarios")),
                p(),
                plotOutput("plot5")
-               )
+               
+      ),
+          
+          
+          # tab - Factor analysis
+          tabPanel("Factor analysis",
+                   # input graphing details
+                   p(),
+                   h4(tags$b("Relationship between output variables")),
+                   p(),
+                   p(),
+                   selectInput('xcol', 'Select driving variable (X axes)', names(allData),selected = names(allData)[[12]]),
+                   p(),
+                   numericInput('clusters', 'Cluster count', 3, min = 1, max = 9),
+                   p(),
+                   h4(tags$b("Reference scenario")),
+                   p(),
+                   plotOutput("plot1"), 
+                   p(),
+                   h4(tags$b("Alternative scenario")),
+                   p(),
+                   plotOutput("plot2"),
+                   p(),
+                   selectInput('ColFact', 'Select factor for colour', names(allData),selected = names(allData)[[12]]),
+                   p(),
+                   selectInput('symbFact', 'Select factor for symbols', names(allData),selected = names(allData)[[12]])
+          )
+          
     )
   )
 )
@@ -386,6 +390,7 @@ server <- function(input, output) {
     # lng.slc <- approx(lng,y = NULL, lng.vec,  method="constant",rule = 2, f=1)
     
     x <- c(lat.slc,lng.slc)
+    
     return(x)
     
   })
@@ -393,11 +398,20 @@ server <- function(input, output) {
   
   # baseline
   selectedDataPix_Base <- reactive({
+   
+    # values before click # FIXME: not working yet: need to start from selected map
+    if(is.null(coordSelectBaseMap4()[1])) {
+      lat <- -37.925
+      lng <- 176.275
+    } else {
+      lat <- coordSelectBaseMap4()[1]
+      lng <- coordSelectBaseMap4()[2]
+    }
     
     # Due to dplyr issue #318, we need temp variables for input values
    # gc <- input$gc
-    lat <- coordSelectBaseMap4()[1]
-    lng <- coordSelectBaseMap4()[2]
+   # lat <- coordSelectBaseMap4()[1]
+   # lng <- coordSelectBaseMap4()[2]
     crop <- input$crop
     soil <- input$soil
     scn <- input$scn
@@ -417,9 +431,17 @@ server <- function(input, output) {
   # Alternative
   selectedDataPix_Alt <- reactive({
     
+    # values before click
+    if(is.null(coordSelectBaseMap4()[1])) {
+      lat <- -37.925
+      lng <- 176.275
+    } else {
+      lat <- coordSelectBaseMap4()[1]
+      lng <- coordSelectBaseMap4()[2]
+    }
    # gc <- input$gc
-    lat <- coordSelectBaseMap4()[1]
-    lng <- coordSelectBaseMap4()[2]
+ #   lat <- coordSelectBaseMap4()[1]
+ #   lng <- coordSelectBaseMap4()[2]
     crop2 <- input$crop2
     soil2 <- input$soil2
     scn2 <- input$scn2
@@ -618,7 +640,8 @@ server <- function(input, output) {
       
     } else {
       
-   
+     x <- as.numeric(unlist(x))
+      
       bins <- seq(min(x), max(x), length.out = input$bins + 1)
       
       # FIXME: invalid 'type' (list) of argument
@@ -703,15 +726,11 @@ server <- function(input, output) {
     renderLeaflet({
       leaflet() %>%
         setView(lng = 176.272, lat = -38.0, zoom = 9) %>%
-       # addPolygons(data=sf2, fill = F ,opacity = 0.7, weight = 5) %>%
         addTiles()  %>%
         addPolygons(data=sf2, fill = F ,opacity = 0.7, weight = 2, group = "Catchment Borders") %>%       
         addLayersControl(
           overlayGroups = c("Catchment Borders","Rasters"),
           options = layersControlOptions(collapsed = FALSE))
-      #  addCircleMarkers(lat = -38.0, lng = 176.272, radius = 10) %>%
-      #  addPopups(176.272, -38.0, content,
-      #            options = popupOptions(closeButton = FALSE) ) #%>%
     })
   }
   
