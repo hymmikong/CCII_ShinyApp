@@ -526,10 +526,14 @@ server <- function(input, output) {
     df_merge <- rbind(df_bas,df_alt)
     
  #   ggplot(data=selectedData_Base()) + geom_point(aes_string(x=input$xcol, y=mainVarSelec()))
-    ggplot(data=df_merge) + 
-      geom_point(aes_string(x=input$xcol, y=mainVarSelec(), colour = as.factor(df_merge$scn)) #+
-                 #  theme(legend.position = c(0.9, 0.9))) # FIXME: not able to get rid of legend yet
-      )
+    df_merge %>%
+    ggplot(aes_string(x=input$xcol, y=mainVarSelec() )) + 
+      geom_point(aes(colour = as.factor(scn),size = 5)) +
+      theme(legend.position = c(0.1, 0.8))
+                   #+ # Error; non-numeric argument to binary operator
+                  #stat_smooth()
+                   #+
+                 #  theme(legend.position = c(0.9, 0.9)) # FIXME: not able to get rid of legend yet
     })
   
   # alternative graph
