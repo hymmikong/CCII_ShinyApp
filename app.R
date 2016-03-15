@@ -62,7 +62,8 @@ ui <- fluidPage(
   
   # Side panel details
   sidebarPanel(width = 2,
-   selectInput('mainvar', 'Select the output variable:', fullNames, selected = fullNames[14]),
+   selectInput('crop99', 'Select crop species', as.character(unique(allData$CurrentCrop))),            
+   selectInput('mainvar', 'Select output variable:', fullNames, selected = fullNames[12]),
     
     # Show selection
     textOutput("text1"),
@@ -72,13 +73,13 @@ ui <- fluidPage(
     h4(tags$b("Calculation details")),
     radioButtons("stats", "Statistics:",
                  inline = TRUE,
-                 c("Average" = "av","CV (%)" = "cv")),
+                 c("Average" = "av","Variability (CV%)" = "cv")),
     radioButtons("comp", "Comparison method (diff maps):",
                  inline = TRUE,
                  c("Absolute" = "abs","Relative (%)" = "rel")),
    
    # raster transparency
-   p(),
+   tags$hr(),
    sliderInput("slider1", 
                label = h4(tags$b("Raster transparency")), 
                min = 0, max = 1, value = 0.5),
@@ -86,6 +87,8 @@ ui <- fluidPage(
    # input scenario 1 (baseline)
     tags$hr(),
     h4(tags$b("Refence scenario (baseline)")),
+    selectInput('gcm', 'Global Climate Model 1', as.character(unique(allData$thisScenario))),
+    selectInput('rcp', 'RCP 1', as.character(unique(allData$thisScenario))),
     selectInput('scn', 'Climate scenario 1', as.character(unique(allData$thisScenario))),
     selectInput('crop', 'Crop type 1', as.character(unique(allData$CurrentCrop))),
     selectInput('soil', 'Soil type 1', as.character(unique(allData$thisSoil))),
@@ -93,7 +96,9 @@ ui <- fluidPage(
    # input scenario 2 (alternative)
     tags$hr(),
     h4(tags$b("Alternative scenario")),
-    selectInput('scn2', 'Climate scenario 2', as.character(unique(allData$thisScenario)),selected = as.character(unique(allData$thisScenario))[[2]]),
+    selectInput('gcm2', 'Global Climate Model 2', as.character(unique(allData$thisScenario))),
+    selectInput('rcp2', 'RCP 2', as.character(unique(allData$thisScenario))),
+    selectInput('scn2', 'Climate scenario 2', as.character(unique(allData$thisScenario)),selected = as.character(unique(allData$thisScenario))[[1]]),
     selectInput('crop2', 'Crop type 2 ', as.character(unique(allData$CurrentCrop))),
     selectInput('soil2', 'Soil type 2', as.character(unique(allData$thisSoil))),
    
@@ -142,18 +147,22 @@ ui <- fluidPage(
       tabPanel("Difference maps",
                # show map
                p(),
+               h4(tags$b("Distribution across all grid-cells")),
+               plotOutput("plot7"),
+               p(),
                h4(tags$b("Differences between selected scenarios")),
                leafletOutput("basemap3"),
                p(),
                # tableOutput("table1"), # tables for testing app
                # tableOutput("table2"),
                # tableOutput("table3"),
-               plotOutput("plot7"),
-               leafletOutput("map_result")
+               h4(tags$b("Inter-annual variability within selected grid-cell:")),
+               p(),
+               plotOutput("plot5")
       ),
       
 
-      # tab - Grid cell analysis
+      # tab - Grid cell analysis FIXME: to be moved to Difference map analysis
       tabPanel("Grid-cell analysis", 
                p(),
            #    h4(tags$b("Graphs show the distribution of 20 year simulations within a grid-cell")),
@@ -163,7 +172,7 @@ ui <- fluidPage(
                p(),
                leafletOutput("basemap4"),
                p(),
-               h4(tags$b(textOutput("text2")),align = "center"), # lat/long
+              # h4(tags$b(textOutput("text2")),align = "center"), # lat/long
                p(),
                h4(tags$b("Reference scenario")),
                p(),
@@ -172,11 +181,11 @@ ui <- fluidPage(
           #     h4(tags$b("Alternative scenario")),
                p(),
           #     plotOutput("plot4"),
-               p(),
-               h4(tags$b("Difference for alternative scenarios")),
-               p(),
-               plotOutput("plot5")
-               
+            #   p(),
+            #   h4(tags$b("Difference for alternative scenarios")),
+           #    p(),
+           #    plotOutput("plot5")
+               p()
       ),
           
           
@@ -378,9 +387,9 @@ server <- function(input, output) {
   # Pixel Data for graphing (filtered by lat-long) -----------
   
   # select lat / long approximate coordinates by click
-  coordSelectBaseMap4 <- reactive({
-    lat <-  as.numeric(as.character(input$basemap4_click$lat))
-    lng <-  as.numeric(as.character(input$basemap4_click$lng))
+  coordSelectBaseMap3 <- reactive({
+    lat <-  as.numeric(as.character(input$basemap3_click$lat))
+    lng <-  as.numeric(as.character(input$basemap3_click$lng))
     
     lat.vec <- sort(as.numeric(unique(allData$thisLat)))
     lng.vec <- sort(as.numeric(unique(allData$thisLong)))
@@ -403,12 +412,12 @@ server <- function(input, output) {
   selectedDataPix_Base <- reactive({
    
     # values before click # FIXME: not working yet: need to start from selected map
-    if(is.null(as.numeric(coordSelectBaseMap4()))) {
+    if(is.null(as.numeric(coordSelectBaseMap3()))) {
       lat <- -37.925
       lng <- 176.275
     } else {
-      lat <- coordSelectBaseMap4()[1]
-      lng <- coordSelectBaseMap4()[2]
+      lat <- coordSelectBaseMap3()[1]
+      lng <- coordSelectBaseMap3()[2]
     }
   
     # Due to dplyr issue #318, we need temp variables for input values
@@ -435,12 +444,12 @@ server <- function(input, output) {
   selectedDataPix_Alt <- reactive({
     
     # values before click # FIXME: not working yet
-    if(is.null(as.numeric(coordSelectBaseMap4()))) {
+    if(is.null(as.numeric(coordSelectBaseMap3()))) {
       lat <- -37.925
       lng <- 176.275
     } else {
-      lat <- coordSelectBaseMap4()[1]
-      lng <- coordSelectBaseMap4()[2]
+      lat <- coordSelectBaseMap3()[1]
+      lng <- coordSelectBaseMap3()[2]
     }
    # gc <- input$gc
  #   lat <- coordSelectBaseMap4()[1]
@@ -567,13 +576,16 @@ server <- function(input, output) {
    # thisUnit <- ifelse((compSelection() == "rel"| statSelection() == 4), "%", varUnits())
     thisUnit <- varUnits()
     
-    if(input$graphType == "b") {
+    # sort out limits of axes
+      yAxesLims <- c(axesLimits_Pix()$ymin, axesLimits_Pix()$ymax)
+      
+        if(input$graphType == "b") {
       
       boxplot(x,
               main=" ",
-              col = "darkgrey",
+              col = "lightgrey",
               horizontal=TRUE,
-              ylim=c(axesLimits_Pix()$ymin, axesLimits_Pix()$ymax),
+              ylim= yAxesLims,
               xlab=paste0(mainVarSelec()," (", thisUnit,")"),
               pch = 20, cex = 3)
       points(clusters()$centers, pch = 4, cex = 4, lwd = 4) 
@@ -584,9 +596,9 @@ server <- function(input, output) {
       
     hist(x,
          main=" ",
-         col = "darkgrey",
+         col = "lightgrey",
          breaks = bins,
-         xlim=c(axesLimits_Pix()$ymin, axesLimits_Pix()$ymax),
+         xlim= yAxesLims,
          xlab=paste0(mainVarSelec()," (", thisUnit,")"),
          pch = 20, cex = 3)
     }
@@ -608,7 +620,7 @@ server <- function(input, output) {
     
     boxplot(x,
             main= " ",
-            col = "darkgrey",
+            col = "lightgrey",
             horizontal=TRUE,
             ylim=c(axesLimits_Pix()$ymin, axesLimits_Pix()$ymax),
             xlab=paste0(mainVarSelec()," (", thisUnit,")"),
@@ -621,7 +633,7 @@ server <- function(input, output) {
       
       hist(x,
            main=" ",
-           col = "darkgrey",
+           col = "lightgrey",
            breaks = bins,
            xlim=c(axesLimits_Pix()$ymin, axesLimits_Pix()$ymax),
            xlab=paste0(mainVarSelec()," (", thisUnit,")"),
@@ -651,7 +663,7 @@ server <- function(input, output) {
       
       boxplot(x,
               main= " ",
-              col = "darkgrey",
+              col = "lightgrey",
               horizontal=TRUE,
         #      ylim=c(min(min(bas,alt)), max(max(bas,alt))),
               xlab=paste0("Difference in ", mainVarSelec()," (", thisUnit,")"),
@@ -667,7 +679,7 @@ server <- function(input, output) {
       # FIXME: invalid 'type' (list) of argument
       hist(x,
            main=" ",
-           col = "darkgrey",
+           col = "lightgrey",
            breaks = bins,
         #   xlim=c(axesLimits_Pix()$ymin, axesLimits_Pix()$ymax),
            xlab=paste0("Difference in ",mainVarSelec()," (", thisUnit,")"),
@@ -751,7 +763,7 @@ server <- function(input, output) {
         addLayersControl(
           overlayGroups = c("Catchment Borders","Rasters"),
           options = layersControlOptions(collapsed = FALSE))
-    })
+    } )
   }
   
   # Create basemaps
@@ -804,12 +816,18 @@ server <- function(input, output) {
     pal <- colorNumeric(c("#ffffe5", "#fff7bc", "#fee391","#fec44f","#fe9929","#ec7014","#cc4c02","#8c2d04"), 
                         values(diff_rasterLayer()), na.color = "transparent")
     
+    lng <- ifelse(is.null(input$basemap3_click$lng), 178,input$basemap3_click$lng)
+    lat <- ifelse(is.null(input$basemap3_click$lat), -38,input$basemap3_click$lat)
+    
+    
     thisTitle <- ifelse((compSelection() == "rel"| statSelection() == 4), "(%)", varUnits()) # FIXME: the use of int for statSel is not intuitive
     
     leafletProxy("basemap3", data = c(diff_rasterLayer(), sl())) %>%
       clearGroup(group="Rasters") %>%
       clearControls() %>% # necessary to remove old legend
+      clearMarkers() %>%
       addRasterImage(diff_rasterLayer(),colors = pal, opacity = sl(), group = "Rasters") %>%
+      addMarkers(lng,lat) %>%
       addLegend(pal = pal, values = values(diff_rasterLayer()), 
                 title = thisTitle) # FIXME: Use % or CV% if relative selected
   })
@@ -869,7 +887,7 @@ server <- function(input, output) {
       boxplot(as.numeric(unlist(x)),
               main=" ",
               horizontal=TRUE,
-              col = "darkgrey",
+              col = "lightgrey",
               xlab=paste0(mainVarSelec()," (", thisUnit,")"),
               pch = 20, cex = 3)
       
@@ -879,7 +897,7 @@ server <- function(input, output) {
       
       hist(as.numeric(unlist(x)),
            main=" ",
-           col = "darkgrey",
+           col = "lightgrey",
            breaks = bins,
            xlab=paste0(mainVarSelec()," (", thisUnit,")"),
            pch = 20, cex = 3)
