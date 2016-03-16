@@ -183,15 +183,19 @@ ui <- fluidPage(
                h4(tags$b("Differences between selected scenarios")),
                leafletOutput("basemap3"),
                tags$hr(),
-               h4(tags$b("Distribution across all grid-cells")),
-               plotOutput("plot7"),
-               # tableOutput("table1"), # tables for testing app
-               # tableOutput("table2"),
-               # tableOutput("table3"),
-               tags$hr(),
-               h4(tags$b("Inter-annual variability within selected grid-cell:")),
-               p(),
-               plotOutput("plot5")
+
+               fluidRow(
+                 column(6,
+                        h4(tags$b("Distribution across all grid-cells")),
+                        plotOutput("plot7")
+                 ),
+                 column(6,
+                        h4(tags$b("Inter-annual variability within selected grid-cell:")),
+                        p(),
+                        plotOutput("plot5")
+                 )
+               )
+
       ),
       
       
