@@ -85,20 +85,20 @@ ui <- fluidPage(
                fluidRow(
                  column(6,
                         h4(tags$b("Refence")),
-                        selectInput('gcm', 'GCM ', as.character(unique(allData$thisScenario))),
-                        selectInput('rcp', 'RCP', as.character(unique(allData$thisScenario))),
-                        selectInput('scn', 'Climate scenario', as.character(unique(allData$thisScenario))),
-                        selectInput('crop', 'Crop type ', as.character(unique(allData$CurrentCrop))),
-                        selectInput('soil', 'Soil type ', as.character(unique(allData$thisSoil)))
+                        selectInput('gcm', 'GCM #1', as.character(unique(allData$thisScenario))),
+                        selectInput('rcp', 'RCP #1', as.character(unique(allData$thisScenario))),
+                        selectInput('scn', 'Time #1', as.character(unique(allData$thisScenario))),
+                        selectInput('crop', 'Cultivar #1', as.character(unique(allData$CurrentCrop))),
+                        selectInput('soil', 'Soil #1 ', as.character(unique(allData$thisSoil)))
                         
                  ),
                  column(6,
                         h4(tags$b("Alternative")),
-                        selectInput('gcm2','.', as.character(unique(allData$thisScenario))),
-                        selectInput('rcp2', '.', as.character(unique(allData$thisScenario))),
-                        selectInput('scn2', '.', as.character(unique(allData$thisScenario)),selected = as.character(unique(allData$thisScenario))[[1]]),
-                        selectInput('crop2', ' .', as.character(unique(allData$CurrentCrop))),
-                        selectInput('soil2', ' .', as.character(unique(allData$thisSoil)))
+                        selectInput('gcm2','GCM #2', as.character(unique(allData$thisScenario))),
+                        selectInput('rcp2', 'RCP #2', as.character(unique(allData$thisScenario))),
+                        selectInput('scn2', 'Time #2', as.character(unique(allData$thisScenario)),selected = as.character(unique(allData$thisScenario))[[1]]),
+                        selectInput('crop2', 'Cultivar #2', as.character(unique(allData$CurrentCrop))),
+                        selectInput('soil2', 'Soil #2', as.character(unique(allData$thisSoil)))
                         
                  )
                ),
@@ -145,29 +145,25 @@ ui <- fluidPage(
       # tab - Spatial analysis
       tabPanel("Spatial analysis",
                
-               
+               # main graphs
                fluidRow(
                  column(6,
-                        sliderInput("obs", "Number of observations:",
-                                    min = 1, max = 1000, value = 500)
+                        p(),
+                        h4(tags$b("Reference scenario")),
+                        leafletOutput("basemap1", width = "100%")
                  ),
                  column(6,
-                        sliderInput("obs", "Number of observations:",
-                                    min = 1, max = 1000, value = 500)
+                        p(),
+                        h4(tags$b("Alternative scenario")),
+                        leafletOutput("basemap2", width = "100%")
                  )
-               ),
+               )
+               
+               
+               # Add other fluid row here for graphs???? FIXME
                
                
                
-               p(),
-               h4(tags$b("Reference scenario")),
-               p(),
-               leafletOutput("basemap1", width = "50%"),
-               p(),
-               h4(tags$b("Alternative scenario")),
-               p(),
-               leafletOutput("basemap2", width = "50%"),
-               p()
       ),
       
       # tab - Difference map analysis
