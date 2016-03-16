@@ -52,8 +52,10 @@ sf2 <- readShapeSpatial(pathShapeFile, proj4string = CRS("+proj=longlat +datum=W
 # sf2 <- gSimplify(sf2,tol=.01,topologyPreserve = TRUE)
 
 
-#------------- THE UI ------------------------------------------------
 
+#-------------------------------------------------------------------
+#------------- THE UI ------------------------------------------------
+#--------------------------------------------------------------------
 
 ui <- fluidPage(
   
@@ -76,24 +78,35 @@ ui <- fluidPage(
                radioButtons("comp", "Comparison method (diff maps):",
                             inline = TRUE,
                             c("Absolute" = "abs","Relative (%)" = "rel")),
+               
+               
+               tags$hr(),
+               h4(tags$b("Select scenario elements")),
+               fluidRow(
+                 column(6,
+                        h4(tags$b("Refence")),
+                        selectInput('gcm', 'GCM ', as.character(unique(allData$thisScenario))),
+                        selectInput('rcp', 'RCP', as.character(unique(allData$thisScenario))),
+                        selectInput('scn', 'Climate scenario', as.character(unique(allData$thisScenario))),
+                        selectInput('crop', 'Crop type ', as.character(unique(allData$CurrentCrop))),
+                        selectInput('soil', 'Soil type ', as.character(unique(allData$thisSoil)))
+                        
+                 ),
+                 column(6,
+                        h4(tags$b("Alternative")),
+                        selectInput('gcm2','.', as.character(unique(allData$thisScenario))),
+                        selectInput('rcp2', '.', as.character(unique(allData$thisScenario))),
+                        selectInput('scn2', '.', as.character(unique(allData$thisScenario)),selected = as.character(unique(allData$thisScenario))[[1]]),
+                        selectInput('crop2', ' .', as.character(unique(allData$CurrentCrop))),
+                        selectInput('soil2', ' .', as.character(unique(allData$thisSoil)))
+                        
+                 )
+               ),
+               
+               
             
                # input scenario 1 (baseline)
-               tags$hr(),
-               h4(tags$b("Refence scenario (baseline)")),
-               selectInput('gcm', 'Global Climate Model 1', as.character(unique(allData$thisScenario))),
-               selectInput('rcp', 'RCP 1', as.character(unique(allData$thisScenario))),
-               selectInput('scn', 'Climate scenario 1', as.character(unique(allData$thisScenario))),
-               selectInput('crop', 'Crop type 1', as.character(unique(allData$CurrentCrop))),
-               selectInput('soil', 'Soil type 1', as.character(unique(allData$thisSoil))),
-               
-               # input scenario 2 (alternative)
-               tags$hr(),
-               h4(tags$b("Alternative scenario")),
-               selectInput('gcm2', 'Global Climate Model 2', as.character(unique(allData$thisScenario))),
-               selectInput('rcp2', 'RCP 2', as.character(unique(allData$thisScenario))),
-               selectInput('scn2', 'Climate scenario 2', as.character(unique(allData$thisScenario)),selected = as.character(unique(allData$thisScenario))[[1]]),
-               selectInput('crop2', 'Crop type 2 ', as.character(unique(allData$CurrentCrop))),
-               selectInput('soil2', 'Soil type 2', as.character(unique(allData$thisSoil))),
+
                
                # graph controls
                tags$hr(),
@@ -130,7 +143,22 @@ ui <- fluidPage(
     tabsetPanel(
       
       # tab - Spatial analysis
-      tabPanel("Spatial analysis", 
+      tabPanel("Spatial analysis",
+               
+               
+               fluidRow(
+                 column(6,
+                        sliderInput("obs", "Number of observations:",
+                                    min = 1, max = 1000, value = 500)
+                 ),
+                 column(6,
+                        sliderInput("obs", "Number of observations:",
+                                    min = 1, max = 1000, value = 500)
+                 )
+               ),
+               
+               
+               
                p(),
                h4(tags$b("Reference scenario")),
                p(),
