@@ -76,13 +76,7 @@ ui <- fluidPage(
                radioButtons("comp", "Comparison method (diff maps):",
                             inline = TRUE,
                             c("Absolute" = "abs","Relative (%)" = "rel")),
-               
-               # raster transparency
-               p(),
-               sliderInput("slider1", 
-                           label = h4(tags$b("Raster transparency")), 
-                           min = 0, max = 1, value = 0.5),
-               
+            
                # input scenario 1 (baseline)
                tags$hr(),
                h4(tags$b("Refence scenario (baseline)")),
@@ -112,6 +106,12 @@ ui <- fluidPage(
                            min = 1,
                            max = 20,
                            value = 5),
+               
+               # raster transparency
+               p(),
+               sliderInput("slider1", 
+                           label = h4(tags$b("Raster transparency")), 
+                           min = 0, max = 1, value = 0.5),
                
                # download controls
                tags$hr(),
@@ -146,15 +146,15 @@ ui <- fluidPage(
       tabPanel("Difference maps",
                # show map
                p(),
-               h4(tags$b("Distribution across all grid-cells")),
-               plotOutput("plot7"),
-               p(),
                h4(tags$b("Differences between selected scenarios")),
                leafletOutput("basemap3"),
-               p(),
+               tags$hr(),
+               h4(tags$b("Distribution across all grid-cells")),
+               plotOutput("plot7"),
                # tableOutput("table1"), # tables for testing app
                # tableOutput("table2"),
                # tableOutput("table3"),
+               tags$hr(),
                h4(tags$b("Inter-annual variability within selected grid-cell:")),
                p(),
                plotOutput("plot5")
