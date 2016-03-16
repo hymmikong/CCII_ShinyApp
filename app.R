@@ -145,7 +145,7 @@ ui <- fluidPage(
       # tab - Spatial analysis
       tabPanel("Spatial analysis",
                
-               # main graphs
+               # main maps
                fluidRow(
                  column(6,
                         p(),
@@ -157,11 +157,21 @@ ui <- fluidPage(
                         h4(tags$b("Alternative scenario")),
                         leafletOutput("basemap2", width = "100%")
                  )
-               )
+               ),
                
                
                # Add other fluid row here for graphs???? FIXME
-               
+               # main graphs
+               fluidRow(
+                 column(6,
+                        p(),
+                        plotOutput("plot10")
+                 ),
+                 column(6,
+                        p(),
+                        plotOutput("plot11")
+                 )
+               )
                
                
       ),
@@ -537,12 +547,94 @@ server <- function(input, output) {
   })
   
   
+  # histogram
+  output$plot10 <- renderPlot({
+
+   # par(mar = c(5.1, 4.1, 2, 1))
+    
+    x    <- as.numeric(unlist(selectedData_Base()[2]))
+    
+    # thisUnit <- ifelse((compSelection() == "rel"| statSelection() == 4), "%", varUnits())
+    thisUnit <- varUnits()
+    
+    # sort out limits of axes
+    yAxesLims <- c(axesLimits()$ymin, axesLimits()$ymax)
+    
+    if(input$graphType == "b") {
+      
+      boxplot(x,
+              main=" ",
+              col = "lightgrey",
+              horizontal=TRUE,
+              ylim= yAxesLims,
+              xlab=paste0(mainVarSelec()," (", thisUnit,")"),
+              pch = 20, cex = 3)
+      points(clusters()$centers, pch = 4, cex = 4, lwd = 4) 
+      
+    } else {
+      
+      bins <- seq(min(x), max(x), length.out = input$bins + 1)
+      
+      hist(x,
+           main=" ",
+           col = "lightgrey",
+           breaks = bins,
+           xlim= yAxesLims,
+           xlab=paste0(mainVarSelec()," (", thisUnit,")"),
+           pch = 20, cex = 3)
+    }
+    
+    
+  })
+  
+  
+  # alternative
+  
+  # histogram
+  output$plot11 <- renderPlot({
+    
+    # par(mar = c(5.1, 4.1, 2, 1))
+    
+    x    <- as.numeric(unlist(selectedData_Alt()[2]))
+    
+    # thisUnit <- ifelse((compSelection() == "rel"| statSelection() == 4), "%", varUnits())
+    thisUnit <- varUnits()
+    
+    # sort out limits of axes
+    yAxesLims <- c(axesLimits()$ymin, axesLimits()$ymax)
+    
+    if(input$graphType == "b") {
+      
+      boxplot(x,
+              main=" ",
+              col = "lightgrey",
+              horizontal=TRUE,
+              ylim= yAxesLims,
+              xlab=paste0(mainVarSelec()," (", thisUnit,")"),
+              pch = 20, cex = 3)
+      points(clusters()$centers, pch = 4, cex = 4, lwd = 4) 
+      
+    } else {
+      
+      bins <- seq(min(x), max(x), length.out = input$bins + 1)
+      
+      hist(x,
+           main=" ",
+           col = "lightgrey",
+           breaks = bins,
+           xlim= yAxesLims,
+           xlab=paste0(mainVarSelec()," (", thisUnit,")"),
+           pch = 20, cex = 3)
+    }
+    
+    
+  })
+  
   # X Y graphic comparison of variables----------
   
-  # base graph
+  # XY scatter graph 
   output$plot1 <- renderPlot({
-    par(mar = c(5.1, 4.1, 2, 1))
-    
+
     if (is.character(selectedData_Base()))
       return(NULL)
     
