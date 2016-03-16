@@ -75,11 +75,7 @@ ui <- fluidPage(
                radioButtons("stats", "Statistics:",
                             inline = TRUE,
                             c("Average" = "av","Variability (CV%)" = "cv")),
-               radioButtons("comp", "Comparison method (diff maps):",
-                            inline = TRUE,
-                            c("Absolute" = "abs","Relative (%)" = "rel")),
-               
-               
+
                tags$hr(),
                h4(tags$b("Select scenario elements")),
                fluidRow(
@@ -180,6 +176,19 @@ ui <- fluidPage(
       tabPanel("Difference maps",
                # show map
                p(),
+               
+               fluidRow(
+                 column(12,
+                        radioButtons("comp", "Comparison method (diff maps):",
+                                     inline = TRUE,
+                                     c("Absolute" = "abs","Relative (%)" = "rel"))
+                 )
+               ),
+               
+               
+               
+               
+               
                h4(tags$b("Differences between selected scenarios")),
                leafletOutput("basemap3"),
                tags$hr(),
