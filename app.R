@@ -19,8 +19,9 @@ library(gplots)
 library(htmltools)
 #install.packages('raster', repos = 'http://r-forge.r-project.org/', type = 'source') # using new raster lib
 
-# load raw data
-allData <- read.csv("C:\\GitHubRepos\\CCII_ShinyApp\\data\\AllData(RA2).csv", header = TRUE)
+# load raw data FIXME: this will be a function of the selection 
+allData_1 <- read.csv("C:\\GitHubRepos\\CCII_ShinyApp\\data\\AllData(RA2)_maize.csv", header = TRUE)
+allData_2 <- read.csv("C:\\GitHubRepos\\CCII_ShinyApp\\data\\AllData(RA2)_lucerne.csv", header = TRUE)
 
 # Select variables of interest based on listed outputs
 varList <- read.csv("C:\\GitHubRepos\\CCII_ShinyApp\\data\\variableNames.csv", header = TRUE)
@@ -33,27 +34,31 @@ all.factors <- varList %>%
 varNames <- as.character(selectedVars_df$variable)
 
 # find col positions that hold the variables of interest in the raw df
-selectColNos <- match(varNames,names(allData))
+selectColNos <- match(varNames,names(allData_1))
 
-allData <- allData  %>%
+allData_1 <- allData_1  %>%
   dplyr::select(selectColNos)
 
 fullNames <- as.character(selectedVars_df$fullName)
 
 # Customise data (FIXME: this should be done earlier in raw dataset)
-allData <- allData %>%
+allData_1 <- allData_1 %>%
   mutate(Lat_Long = paste0(thisLat,"_",thisLong), 
          FUE = TotalBiomass/PTfert)
 
+# load polygon maps of geographical regions -------------------
 
-# Load polygon maps for 'Kaituna' catchment
+# 'Kaituna' catchment
 pathShapeFile <- 'C:/apsim_dev/Projects/CCII/GIS_layers/CaseStudy/lowerKaitunabnd(WGS84).shp'
 sf2 <- readShapeSpatial(pathShapeFile, proj4string = CRS("+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"))
 # sf2 <- gSimplify(sf2,tol=.01,topologyPreserve = TRUE)
 
+# define crop species
+cropSpecies <- c("maize silage", "forage wheat", "lucerne" )
 
-#------------- THE UI ------------------------------------------------
-
+#---------------------------------------------------------------------
+#------------- THE User Interface (UI) -------------------------------
+#---------------------------------------------------------------------
 
 ui <- fluidPage(
   
@@ -62,8 +67,8 @@ ui <- fluidPage(
   
   # Side panel details
   sidebarPanel(width = 2,
-   selectInput('crop99', 'Select crop species', as.character(unique(allData$CurrentCrop))),            
-   selectInput('mainvar', 'Select output variable:', fullNames, selected = fullNames[12]),
+   selectInput('cropSp', 'Select crop species', cropSpecies,selected = cropSpecies[1]),            
+   selectInput('mainvar', 'Select output variable', fullNames, selected = fullNames[12]),
     
     # Show selection
     textOutput("text1"),
@@ -71,10 +76,10 @@ ui <- fluidPage(
     # input stats
     tags$hr(),
     h4(tags$b("Calculation details")),
-    radioButtons("stats", "Statistics:",
+    radioButtons("stats", "Statistics",
                  inline = TRUE,
                  c("Average" = "av","Variability (CV%)" = "cv")),
-    radioButtons("comp", "Comparison method (diff maps):",
+    radioButtons("comp", "Comparison method (diff maps)",
                  inline = TRUE,
                  c("Absolute" = "abs","Relative (%)" = "rel")),
    
@@ -87,25 +92,25 @@ ui <- fluidPage(
    # input scenario 1 (baseline)
     tags$hr(),
     h4(tags$b("Refence scenario (baseline)")),
-    selectInput('gcm', 'Global Climate Model 1', as.character(unique(allData$thisScenario))),
-    selectInput('rcp', 'RCP 1', as.character(unique(allData$thisScenario))),
-    selectInput('scn', 'Climate scenario 1', as.character(unique(allData$thisScenario))),
-    selectInput('crop', 'Crop type 1', as.character(unique(allData$CurrentCrop))),
-    selectInput('soil', 'Soil type 1', as.character(unique(allData$thisSoil))),
+    selectInput('gcm', 'Global Climate Model #1', as.character(unique(allData_1$thisScenario))),
+    selectInput('rcp', 'RCP #1', as.character(unique(allData_1$thisScenario))),
+    selectInput('scn', 'Climate scenario #1', as.character(unique(allData_1$thisScenario))),
+    selectInput('crop', 'Crop type #1', as.character(unique(allData_1$CurrentCrop))),
+    selectInput('soil', 'Soil type #1', as.character(unique(allData_1$thisSoil))),
     
    # input scenario 2 (alternative)
     tags$hr(),
     h4(tags$b("Alternative scenario")),
-    selectInput('gcm2', 'Global Climate Model 2', as.character(unique(allData$thisScenario))),
-    selectInput('rcp2', 'RCP 2', as.character(unique(allData$thisScenario))),
-    selectInput('scn2', 'Climate scenario 2', as.character(unique(allData$thisScenario)),selected = as.character(unique(allData$thisScenario))[[1]]),
-    selectInput('crop2', 'Crop type 2 ', as.character(unique(allData$CurrentCrop))),
-    selectInput('soil2', 'Soil type 2', as.character(unique(allData$thisSoil))),
+    selectInput('gcm2', 'Global Climate Model #2', as.character(unique(allData_1$thisScenario))),
+    selectInput('rcp2', 'RCP #2', as.character(unique(allData_1$thisScenario))),
+    selectInput('scn2', 'Climate scenario #2', as.character(unique(allData_1$thisScenario)),selected = as.character(unique(allData_1$thisScenario))[[1]]),
+    selectInput('crop2', 'Crop type #2 ', as.character(unique(allData_1$CurrentCrop))),
+    selectInput('soil2', 'Soil type #2', as.character(unique(allData_1$thisSoil))),
    
    # graph controls
    tags$hr(),
    h4(tags$b("Graphing set up")),
-   radioButtons("graphType", "Select type of graph:",
+   radioButtons("graphType", "Select type of graph",
                 inline = TRUE,
                 c("Box plot" = "b","Histogram" = "h")),
    sliderInput("bins",
@@ -167,7 +172,7 @@ ui <- fluidPage(
                p(),
            #    h4(tags$b("Graphs show the distribution of 20 year simulations within a grid-cell")),
                p(),
-          #     selectInput('gc', 'Grid cell', as.character(unique(allData$Lat_Long))),
+          #     selectInput('gc', 'Grid cell', as.character(unique(allData_1$Lat_Long))),
                h5(tags$b("Click in the location of interest")),
                p(),
                leafletOutput("basemap4"),
@@ -196,7 +201,7 @@ ui <- fluidPage(
                    h4(tags$b("Relationship between output variables")),
                    p(),
                    p(),
-                   selectInput('xcol', 'Select driving variable (X axes)', names(allData),selected = names(allData)[[12]]),
+                   selectInput('xcol', 'Select driving variable (X axes)', names(allData_1),selected = names(allData_1)[[12]]),
                    p(),
                    numericInput('clusters', 'Cluster count', 3, min = 1, max = 9),
                    p(),
@@ -208,9 +213,9 @@ ui <- fluidPage(
                    p(),
                 #   plotOutput("plot2"),
                    p(),
-              #     selectInput('colFacet', 'Select factor for colour', names(allData),selected = names(allData)[[12]]),
+              #     selectInput('colFacet', 'Select factor for colour', names(allData_1),selected = names(allData_1)[[12]]),
                    p()
-               #    selectInput('symFacet', 'Select factor for symbols', names(allData),selected = names(allData)[[12]])
+               #    selectInput('symFacet', 'Select factor for symbols', names(allData_1),selected = names(allData_1)[[12]])
           )
           
     )
@@ -270,7 +275,7 @@ server <- function(input, output) {
   
   # select variable
   varSelection <- reactive({
-    varToRaster <- match(mainVarSelec(), names(allData))
+    varToRaster <- match(mainVarSelec(), names(allData_1))
     varToRaster
   })
   
@@ -293,7 +298,7 @@ server <- function(input, output) {
     soil <- input$soil
     scn <- input$scn
     
-    r <- allData %>%
+    r <- allData_1 %>%
       filter(CurrentCrop == crop & 
                thisSoil == soil  &
                thisScenario == scn) %>%
@@ -311,7 +316,7 @@ server <- function(input, output) {
     soil <- input$soil2
     scn <- input$scn2
     
-    r <- allData %>%
+    r <- allData_1 %>%
       filter(CurrentCrop == crop & 
                thisSoil == soil  &
                thisScenario == scn) %>%
@@ -358,14 +363,14 @@ server <- function(input, output) {
     soil <- input$soil
     scn <- input$scn
     
-    allData <- allData %>%
+    allData_1 <- allData_1 %>%
       filter(   CurrentCrop == crop & 
                 thisSoil == soil  &
                thisScenario == scn
               )
     
     
-    allData[, c(input$xcol, mainVarSelec())]
+    allData_1[, c(input$xcol, mainVarSelec())]
   })
   
   # select driving variable for graph (X axes)
@@ -375,12 +380,12 @@ server <- function(input, output) {
     soil2 <- input$soil2
     scn2 <- input$scn2
     
-    allData <- allData %>%
+    allData_1 <- allData_1 %>%
       filter( CurrentCrop == crop2 & 
                 thisSoil == soil2  &
                 thisScenario == scn2
       )
-    allData[, c(input$xcol, mainVarSelec())]
+    allData_1[, c(input$xcol, mainVarSelec())]
   })
   
   
@@ -391,8 +396,8 @@ server <- function(input, output) {
     lat <-  as.numeric(as.character(input$basemap3_click$lat))
     lng <-  as.numeric(as.character(input$basemap3_click$lng))
     
-    lat.vec <- sort(as.numeric(unique(allData$thisLat)))
-    lng.vec <- sort(as.numeric(unique(allData$thisLong)))
+    lat.vec <- sort(as.numeric(unique(allData_1$thisLat)))
+    lng.vec <- sort(as.numeric(unique(allData_1$thisLong)))
     
     # FIXME: closest value needs to change to approx to deal with NAs
     lat.slc <- closestValue(lat,lat.vec)
@@ -428,7 +433,7 @@ server <- function(input, output) {
     soil <- input$soil
     scn <- input$scn
     
-    allData <- allData %>%
+    allData_1 <- allData_1 %>%
       filter( #Lat_Long == gc &
           thisLat == lat &
           thisLong == lng &
@@ -436,8 +441,8 @@ server <- function(input, output) {
           thisSoil == soil  &
           thisScenario == scn
       )
-    allData[, c(input$xcol, mainVarSelec())]
-   # allData[, mainVarSelec()]
+    allData_1[, c(input$xcol, mainVarSelec())]
+   # allData_1[, mainVarSelec()]
   })
   
   # Alternative
@@ -458,7 +463,7 @@ server <- function(input, output) {
     soil2 <- input$soil2
     scn2 <- input$scn2
     
-    allData <- allData %>%
+    allData_1 <- allData_1 %>%
       filter( #Lat_Long == gc & # Note that's the same lat/long for both graphs
                 thisLat == lat &
                 thisLong == lng &
@@ -467,8 +472,8 @@ server <- function(input, output) {
                 thisScenario == scn2
       )
     
-    allData[, c(input$xcol, mainVarSelec())]
-   # allData[, mainVarSelec()]
+    allData_1[, c(input$xcol, mainVarSelec())]
+   # allData_1[, mainVarSelec()]
   })
   
   
@@ -933,8 +938,8 @@ server <- function(input, output) {
     lat <-  as.numeric(as.character(input$basemap4_click$lat))
     lng <-  as.numeric(as.character(input$basemap4_click$lng))
     
-    lat.vec <- sort(as.numeric(unique(allData$thisLat)))
-    lng.vec <- sort(as.numeric(unique(allData$thisLong)))
+    lat.vec <- sort(as.numeric(unique(allData_1$thisLat)))
+    lng.vec <- sort(as.numeric(unique(allData_1$thisLong)))
     
     # FIXME: closest value needs to change to approx to deal with NAs
     lat.slc <- closestValue(lat,lat.vec)
