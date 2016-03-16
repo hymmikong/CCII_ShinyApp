@@ -255,10 +255,14 @@ server <- function(input, output) {
   
   # Units of selected variable
   varUnits <- reactive({
+    clickStats <- input$stats
     varDetails <-  selectedVars_df %>%
       filter(variable == mainVarSelec())
     # paste0("(",as.character(varDetails[,"unit"]),")") 
-    as.character(varDetails[,"unit"]) 
+   # as.character(varDetails[,"unit"]) 
+    
+    ifelse(clickStats == "av",as.character(varDetails[,"unit"]), "CV%")
+    
   })
   
   # select stats
