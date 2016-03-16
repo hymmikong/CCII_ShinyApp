@@ -19,9 +19,8 @@ library(gplots)
 library(htmltools)
 #install.packages('raster', repos = 'http://r-forge.r-project.org/', type = 'source') # using new raster lib
 
-# load raw data FIXME: this will be a function of the selection 
-allData_1 <- read.csv("C:\\GitHubRepos\\CCII_ShinyApp\\data\\AllData(RA2)_maize.csv", header = TRUE)
-allData_2 <- read.csv("C:\\GitHubRepos\\CCII_ShinyApp\\data\\AllData(RA2)_lucerne.csv", header = TRUE)
+# load raw data
+allData <- read.csv("C:\\GitHubRepos\\CCII_ShinyApp\\data\\AllData(RA2).csv", header = TRUE)
 
 # Select variables of interest based on listed outputs
 varList <- read.csv("C:\\GitHubRepos\\CCII_ShinyApp\\data\\variableNames.csv", header = TRUE)
@@ -34,31 +33,27 @@ all.factors <- varList %>%
 varNames <- as.character(selectedVars_df$variable)
 
 # find col positions that hold the variables of interest in the raw df
-selectColNos <- match(varNames,names(allData_1))
+selectColNos <- match(varNames,names(allData))
 
-allData_1 <- allData_1  %>%
+allData <- allData  %>%
   dplyr::select(selectColNos)
 
 fullNames <- as.character(selectedVars_df$fullName)
 
 # Customise data (FIXME: this should be done earlier in raw dataset)
-allData_1 <- allData_1 %>%
+allData <- allData %>%
   mutate(Lat_Long = paste0(thisLat,"_",thisLong), 
          FUE = TotalBiomass/PTfert)
 
-# load polygon maps of geographical regions -------------------
 
-# 'Kaituna' catchment
+# Load polygon maps for 'Kaituna' catchment
 pathShapeFile <- 'C:/apsim_dev/Projects/CCII/GIS_layers/CaseStudy/lowerKaitunabnd(WGS84).shp'
 sf2 <- readShapeSpatial(pathShapeFile, proj4string = CRS("+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"))
 # sf2 <- gSimplify(sf2,tol=.01,topologyPreserve = TRUE)
 
-# define crop species
-cropSpecies <- c("maize silage", "forage wheat", "lucerne" )
 
-#---------------------------------------------------------------------
-#------------- THE User Interface (UI) -------------------------------
-#---------------------------------------------------------------------
+#------------- THE UI ------------------------------------------------
+
 
 ui <- fluidPage(
   
@@ -67,71 +62,70 @@ ui <- fluidPage(
   
   # Side panel details
   sidebarPanel(width = 2,
-   selectInput('cropSp', 'Select crop species', cropSpecies,selected = cropSpecies[1]),            
-   selectInput('mainvar', 'Select output variable', fullNames, selected = fullNames[12]),
-    
-    # Show selection
-    textOutput("text1"),
-   
-    # input stats
-    tags$hr(),
-    h4(tags$b("Calculation details")),
-    radioButtons("stats", "Statistics",
-                 inline = TRUE,
-                 c("Average" = "av","Variability (CV%)" = "cv")),
-    radioButtons("comp", "Comparison method (diff maps)",
-                 inline = TRUE,
-                 c("Absolute" = "abs","Relative (%)" = "rel")),
-   
-   # raster transparency
-   tags$hr(),
-   sliderInput("slider1", 
-               label = h4(tags$b("Raster transparency")), 
-               min = 0, max = 1, value = 0.5),
-    
-   # input scenario 1 (baseline)
-    tags$hr(),
-    h4(tags$b("Refence scenario (baseline)")),
-    selectInput('gcm', 'Global Climate Model #1', as.character(unique(allData_1$thisScenario))),
-    selectInput('rcp', 'RCP #1', as.character(unique(allData_1$thisScenario))),
-    selectInput('scn', 'Climate scenario #1', as.character(unique(allData_1$thisScenario))),
-    selectInput('crop', 'Crop type #1', as.character(unique(allData_1$CurrentCrop))),
-    selectInput('soil', 'Soil type #1', as.character(unique(allData_1$thisSoil))),
-    
-   # input scenario 2 (alternative)
-    tags$hr(),
-    h4(tags$b("Alternative scenario")),
-    selectInput('gcm2', 'Global Climate Model #2', as.character(unique(allData_1$thisScenario))),
-    selectInput('rcp2', 'RCP #2', as.character(unique(allData_1$thisScenario))),
-    selectInput('scn2', 'Climate scenario #2', as.character(unique(allData_1$thisScenario)),selected = as.character(unique(allData_1$thisScenario))[[1]]),
-    selectInput('crop2', 'Crop type #2 ', as.character(unique(allData_1$CurrentCrop))),
-    selectInput('soil2', 'Soil type #2', as.character(unique(allData_1$thisSoil))),
-   
-   # graph controls
-   tags$hr(),
-   h4(tags$b("Graphing set up")),
-   radioButtons("graphType", "Select type of graph",
-                inline = TRUE,
-                c("Box plot" = "b","Histogram" = "h")),
-   sliderInput("bins",
-               "Histogram number of bins:",
-               min = 1,
-               max = 20,
-               value = 5),
- 
-  # download controls
-  tags$hr(),
-  h4(tags$b("Download selected data")),
-  downloadButton("downloadData", "Download data"),
-  p(),
-  radioButtons("fileType", "Select type of file:",
-               inline = TRUE,
-               c("Text" = "txt","GeoTiff" = "tif"))
+               selectInput('mainvar', 'Select the output variable:', fullNames, selected = fullNames[12]),
+               
+               # Show selection
+               textOutput("text1"),
+               
+               # input stats
+               tags$hr(),
+               h4(tags$b("Calculation details")),
+               radioButtons("stats", "Statistics:",
+                            inline = TRUE,
+                            c("Average" = "av","Variability (CV%)" = "cv")),
+               radioButtons("comp", "Comparison method (diff maps):",
+                            inline = TRUE,
+                            c("Absolute" = "abs","Relative (%)" = "rel")),
+               
+               # raster transparency
+               p(),
+               sliderInput("slider1", 
+                           label = h4(tags$b("Raster transparency")), 
+                           min = 0, max = 1, value = 0.5),
+               
+               # input scenario 1 (baseline)
+               tags$hr(),
+               h4(tags$b("Refence scenario (baseline)")),
+               selectInput('gcm', 'Global Climate Model 1', as.character(unique(allData$thisScenario))),
+               selectInput('rcp', 'RCP 1', as.character(unique(allData$thisScenario))),
+               selectInput('scn', 'Climate scenario 1', as.character(unique(allData$thisScenario))),
+               selectInput('crop', 'Crop type 1', as.character(unique(allData$CurrentCrop))),
+               selectInput('soil', 'Soil type 1', as.character(unique(allData$thisSoil))),
+               
+               # input scenario 2 (alternative)
+               tags$hr(),
+               h4(tags$b("Alternative scenario")),
+               selectInput('gcm2', 'Global Climate Model 2', as.character(unique(allData$thisScenario))),
+               selectInput('rcp2', 'RCP 2', as.character(unique(allData$thisScenario))),
+               selectInput('scn2', 'Climate scenario 2', as.character(unique(allData$thisScenario)),selected = as.character(unique(allData$thisScenario))[[1]]),
+               selectInput('crop2', 'Crop type 2 ', as.character(unique(allData$CurrentCrop))),
+               selectInput('soil2', 'Soil type 2', as.character(unique(allData$thisSoil))),
+               
+               # graph controls
+               tags$hr(),
+               h4(tags$b("Graphing set up")),
+               radioButtons("graphType", "Select type of graph:",
+                            inline = TRUE,
+                            c("Box plot" = "b","Histogram" = "h")),
+               sliderInput("bins",
+                           "Histogram number of bins:",
+                           min = 1,
+                           max = 20,
+                           value = 5),
+               
+               # download controls
+               tags$hr(),
+               h4(tags$b("Download selected data")),
+               downloadButton("downloadData", "Download data"),
+               p(),
+               radioButtons("fileType", "Select type of file:",
+                            inline = TRUE,
+                            c("Text" = "txt","GeoTiff" = "tif"))
   ),
   
   # Main panel details
   mainPanel(
-  
+    
     # First tab
     tabsetPanel(
       
@@ -140,12 +134,12 @@ ui <- fluidPage(
                p(),
                h4(tags$b("Reference scenario")),
                p(),
-               leafletOutput("basemap1"),
+               leafletOutput("basemap1", width = "50%"),
                p(),
                h4(tags$b("Alternative scenario")),
                p(),
-               leafletOutput("basemap2"),
-        p()
+               leafletOutput("basemap2", width = "50%"),
+               p()
       ),
       
       # tab - Difference map analysis
@@ -166,64 +160,65 @@ ui <- fluidPage(
                plotOutput("plot5")
       ),
       
-
+      
       # tab - Grid cell analysis FIXME: to be moved to Difference map analysis
       tabPanel("Grid-cell analysis", 
                p(),
-           #    h4(tags$b("Graphs show the distribution of 20 year simulations within a grid-cell")),
+               #    h4(tags$b("Graphs show the distribution of 20 year simulations within a grid-cell")),
                p(),
-          #     selectInput('gc', 'Grid cell', as.character(unique(allData_1$Lat_Long))),
+               #     selectInput('gc', 'Grid cell', as.character(unique(allData$Lat_Long))),
                h5(tags$b("Click in the location of interest")),
                p(),
                leafletOutput("basemap4"),
                p(),
-              # h4(tags$b(textOutput("text2")),align = "center"), # lat/long
+               # h4(tags$b(textOutput("text2")),align = "center"), # lat/long
                p(),
                h4(tags$b("Reference scenario")),
                p(),
                plotOutput("plot3"),
                p(),
-          #     h4(tags$b("Alternative scenario")),
+               #     h4(tags$b("Alternative scenario")),
                p(),
-          #     plotOutput("plot4"),
-            #   p(),
-            #   h4(tags$b("Difference for alternative scenarios")),
-           #    p(),
-           #    plotOutput("plot5")
+               #     plotOutput("plot4"),
+               #   p(),
+               #   h4(tags$b("Difference for alternative scenarios")),
+               #    p(),
+               #    plotOutput("plot5")
                p()
       ),
-          
-          
-          # tab - Factor analysis
-          tabPanel("Factor analysis",
-                   # input graphing details
-                   p(),
-                   h4(tags$b("Relationship between output variables")),
-                   p(),
-                   p(),
-                   selectInput('xcol', 'Select driving variable (X axes)', names(allData_1),selected = names(allData_1)[[12]]),
-                   p(),
-                   numericInput('clusters', 'Cluster count', 3, min = 1, max = 9),
-                   p(),
-                   h4(tags$b("Reference scenario")),
-                   p(),
-                   plotOutput("plot1"), 
-                   p(),
+      
+      
+      # tab - Factor analysis
+      tabPanel("Factor analysis",
+               # input graphing details
+               p(),
+               h4(tags$b("Relationship between output variables")),
+               p(),
+               p(),
+               selectInput('xcol', 'Select driving variable (X axes)', names(allData),selected = names(allData)[[12]]),
+               p(),
+               numericInput('clusters', 'Cluster count', 3, min = 1, max = 9),
+               p(),
+               h4(tags$b("Reference scenario")),
+               p(),
+               plotOutput("plot1"), 
+               p(),
                #    h4(tags$b("Alternative scenario")),
-                   p(),
-                #   plotOutput("plot2"),
-                   p(),
-              #     selectInput('colFacet', 'Select factor for colour', names(allData_1),selected = names(allData_1)[[12]]),
-                   p()
-               #    selectInput('symFacet', 'Select factor for symbols', names(allData_1),selected = names(allData_1)[[12]])
-          )
-          
+               p(),
+               #   plotOutput("plot2"),
+               p(),
+               #     selectInput('colFacet', 'Select factor for colour', names(allData),selected = names(allData)[[12]]),
+               p()
+               #    selectInput('symFacet', 'Select factor for symbols', names(allData),selected = names(allData)[[12]])
+      )
+      
     )
   )
 )
 
-
+# ------------------------------------------------------------------------------------------
 #-------------------------- THE SERVER -----------------------------------------------------
+#-------------------------------------------------------------------------------------------
 
 server <- function(input, output) {
   
@@ -236,25 +231,25 @@ server <- function(input, output) {
   
   # simple cv function
   cvFunc <- function(x) {
-     cv <- round((sd(x)/mean(x))*100,1)
+    cv <- round((sd(x)/mean(x))*100,1)
   }
   
   # function to find clossest value
   closestValue <- function (x, vec) {
-            intervalNo <- findInterval(x, vec)
-            lowerValue <- vec[pmax(1, intervalNo)]
-            upperValue <- vec[pmin(length(vec), intervalNo+1)]
-            ifelse(x - lowerValue < upperValue - x, lowerValue, upperValue)
-        }
+    intervalNo <- findInterval(x, vec)
+    lowerValue <- vec[pmax(1, intervalNo)]
+    upperValue <- vec[pmin(length(vec), intervalNo+1)]
+    ifelse(x - lowerValue < upperValue - x, lowerValue, upperValue)
+  }
   
   
   # -------------- Reactive expressions to filter data of BASE raster ------------------
   
   # Name of selected variable in original file. Converts "selected" name to name in "raw" data
   mainVarSelec <- reactive({ # aims to substiture most varNames
-   buf <-  selectedVars_df %>%
-     filter(fullName == as.character(input$mainvar))
-   as.character(buf$variable) # returns var name in raw data
+    buf <-  selectedVars_df %>%
+      filter(fullName == as.character(input$mainvar))
+    as.character(buf$variable) # returns var name in raw data
     
   })
   
@@ -262,7 +257,7 @@ server <- function(input, output) {
   varUnits <- reactive({
     varDetails <-  selectedVars_df %>%
       filter(variable == mainVarSelec())
-  # paste0("(",as.character(varDetails[,"unit"]),")") 
+    # paste0("(",as.character(varDetails[,"unit"]),")") 
     as.character(varDetails[,"unit"]) 
   })
   
@@ -275,7 +270,7 @@ server <- function(input, output) {
   
   # select variable
   varSelection <- reactive({
-    varToRaster <- match(mainVarSelec(), names(allData_1))
+    varToRaster <- match(mainVarSelec(), names(allData))
     varToRaster
   })
   
@@ -298,7 +293,7 @@ server <- function(input, output) {
     soil <- input$soil
     scn <- input$scn
     
-    r <- allData_1 %>%
+    r <- allData %>%
       filter(CurrentCrop == crop & 
                thisSoil == soil  &
                thisScenario == scn) %>%
@@ -316,7 +311,7 @@ server <- function(input, output) {
     soil <- input$soil2
     scn <- input$scn2
     
-    r <- allData_1 %>%
+    r <- allData %>%
       filter(CurrentCrop == crop & 
                thisSoil == soil  &
                thisScenario == scn) %>%
@@ -363,29 +358,29 @@ server <- function(input, output) {
     soil <- input$soil
     scn <- input$scn
     
-    allData_1 <- allData_1 %>%
+    allData <- allData %>%
       filter(   CurrentCrop == crop & 
-                thisSoil == soil  &
-               thisScenario == scn
-              )
+                  thisSoil == soil  &
+                  thisScenario == scn
+      )
     
     
-    allData_1[, c(input$xcol, mainVarSelec())]
+    allData[, c(input$xcol, mainVarSelec())]
   })
   
   # select driving variable for graph (X axes)
   selectedData_Alt <- reactive({
-        
+    
     crop2 <- input$crop2
     soil2 <- input$soil2
     scn2 <- input$scn2
     
-    allData_1 <- allData_1 %>%
+    allData <- allData %>%
       filter( CurrentCrop == crop2 & 
                 thisSoil == soil2  &
                 thisScenario == scn2
       )
-    allData_1[, c(input$xcol, mainVarSelec())]
+    allData[, c(input$xcol, mainVarSelec())]
   })
   
   
@@ -396,8 +391,8 @@ server <- function(input, output) {
     lat <-  as.numeric(as.character(input$basemap3_click$lat))
     lng <-  as.numeric(as.character(input$basemap3_click$lng))
     
-    lat.vec <- sort(as.numeric(unique(allData_1$thisLat)))
-    lng.vec <- sort(as.numeric(unique(allData_1$thisLong)))
+    lat.vec <- sort(as.numeric(unique(allData$thisLat)))
+    lng.vec <- sort(as.numeric(unique(allData$thisLong)))
     
     # FIXME: closest value needs to change to approx to deal with NAs
     lat.slc <- closestValue(lat,lat.vec)
@@ -415,7 +410,7 @@ server <- function(input, output) {
   
   # baseline
   selectedDataPix_Base <- reactive({
-   
+    
     # values before click # FIXME: not working yet: need to start from selected map
     if(is.null(as.numeric(coordSelectBaseMap3()))) {
       lat <- -37.925
@@ -424,25 +419,25 @@ server <- function(input, output) {
       lat <- coordSelectBaseMap3()[1]
       lng <- coordSelectBaseMap3()[2]
     }
-  
+    
     # Due to dplyr issue #318, we need temp variables for input values
-   # gc <- input$gc
-   # lat <- coordSelectBaseMap4()[1]
-   # lng <- coordSelectBaseMap4()[2]
+    # gc <- input$gc
+    # lat <- coordSelectBaseMap4()[1]
+    # lng <- coordSelectBaseMap4()[2]
     crop <- input$crop
     soil <- input$soil
     scn <- input$scn
     
-    allData_1 <- allData_1 %>%
+    allData <- allData %>%
       filter( #Lat_Long == gc &
-          thisLat == lat &
+        thisLat == lat &
           thisLong == lng &
           CurrentCrop == crop & 
           thisSoil == soil  &
           thisScenario == scn
       )
-    allData_1[, c(input$xcol, mainVarSelec())]
-   # allData_1[, mainVarSelec()]
+    allData[, c(input$xcol, mainVarSelec())]
+    # allData[, mainVarSelec()]
   })
   
   # Alternative
@@ -456,24 +451,24 @@ server <- function(input, output) {
       lat <- coordSelectBaseMap3()[1]
       lng <- coordSelectBaseMap3()[2]
     }
-   # gc <- input$gc
- #   lat <- coordSelectBaseMap4()[1]
- #   lng <- coordSelectBaseMap4()[2]
+    # gc <- input$gc
+    #   lat <- coordSelectBaseMap4()[1]
+    #   lng <- coordSelectBaseMap4()[2]
     crop2 <- input$crop2
     soil2 <- input$soil2
     scn2 <- input$scn2
     
-    allData_1 <- allData_1 %>%
+    allData <- allData %>%
       filter( #Lat_Long == gc & # Note that's the same lat/long for both graphs
-                thisLat == lat &
-                thisLong == lng &
-                CurrentCrop == crop2 & 
-                thisSoil == soil2  &
-                thisScenario == scn2
+        thisLat == lat &
+          thisLong == lng &
+          CurrentCrop == crop2 & 
+          thisSoil == soil2  &
+          thisScenario == scn2
       )
     
-    allData_1[, c(input$xcol, mainVarSelec())]
-   # allData_1[, mainVarSelec()]
+    allData[, c(input$xcol, mainVarSelec())]
+    # allData[, mainVarSelec()]
   })
   
   
@@ -490,7 +485,7 @@ server <- function(input, output) {
   
   
   # GRAPHS 1 -----------------------------------------------------------
-
+  
   # create axes limits for all graphs
   
   # For the whole dataframe
@@ -523,14 +518,14 @@ server <- function(input, output) {
     if (is.character(selectedData_Base()))
       return(NULL)
     
-  #  plot(selectedData_Base(),
-  #       main=" ",
-        # title("Title", line = -2),
-  #       col = cluster_Alt()$cluster,
-  #      xlim=c(axesLimits()$xmin, axesLimits()$xmax),
- #       ylim=c(axesLimits()$ymin, axesLimits()$ymax),
-  #       pch = 20, cex = 3)
-  #  points(clusters()$centers, pch = 4, cex = 4, lwd = 4) 
+    #  plot(selectedData_Base(),
+    #       main=" ",
+    # title("Title", line = -2),
+    #       col = cluster_Alt()$cluster,
+    #      xlim=c(axesLimits()$xmin, axesLimits()$xmax),
+    #       ylim=c(axesLimits()$ymin, axesLimits()$ymax),
+    #       pch = 20, cex = 3)
+    #  points(clusters()$centers, pch = 4, cex = 4, lwd = 4) 
     
     df_bas <- selectedData_Base()
     df_bas$scn <- "base"
@@ -539,33 +534,33 @@ server <- function(input, output) {
     
     df_merge <- rbind(df_bas,df_alt)
     
- #   ggplot(data=selectedData_Base()) + geom_point(aes_string(x=input$xcol, y=mainVarSelec()))
+    #   ggplot(data=selectedData_Base()) + geom_point(aes_string(x=input$xcol, y=mainVarSelec()))
     df_merge %>%
-    ggplot(aes_string(x=input$xcol, y=mainVarSelec() )) + 
+      ggplot(aes_string(x=input$xcol, y=mainVarSelec() )) + 
       geom_point(aes(colour = as.factor(scn),size = 5)) +
       theme(legend.position = c(0.1, 0.8))
-                   #+ # Error; non-numeric argument to binary operator
-                  #stat_smooth()
-                   #+
-                 #  theme(legend.position = c(0.9, 0.9)) # FIXME: not able to get rid of legend yet
-    })
+    #+ # Error; non-numeric argument to binary operator
+    #stat_smooth()
+    #+
+    #  theme(legend.position = c(0.9, 0.9)) # FIXME: not able to get rid of legend yet
+  })
   
   # alternative graph
   output$plot2 <- renderPlot({
     par(mar = c(5.1, 4.1, 2, 1))
     
-#    plot(selectedData_Alt(),
-#         main=" ",
-       #  title(main ="Title", line = -2),
-#       xlim=c(axesLimits()$xmin, axesLimits()$xmax),
- #      ylim=c(axesLimits()$ymin, axesLimits()$ymax),
-#         col = cluster_Alt()$cluster,
- #        pch = 20, cex = 3)
- #   points(cluster_Alt()$centers, pch = 4, cex = 4, lwd = 4) 
+    #    plot(selectedData_Alt(),
+    #         main=" ",
+    #  title(main ="Title", line = -2),
+    #       xlim=c(axesLimits()$xmin, axesLimits()$xmax),
+    #      ylim=c(axesLimits()$ymin, axesLimits()$ymax),
+    #         col = cluster_Alt()$cluster,
+    #        pch = 20, cex = 3)
+    #   points(cluster_Alt()$centers, pch = 4, cex = 4, lwd = 4) 
     
     ggplot(data=selectedData_Alt()) + 
       geom_point(aes_string(x=input$xcol, y=mainVarSelec())) 
-   #   facet_grid(input$colFacet ~ input.symFacet) # FIXME: the df has to bring all factors
+    #   facet_grid(input$colFacet ~ input.symFacet) # FIXME: the df has to bring all factors
     
   })
   
@@ -573,18 +568,18 @@ server <- function(input, output) {
   
   # base graph
   output$plot3 <- renderPlot({
-  
+    
     par(mar = c(5.1, 4.1, 2, 1))
     
     x    <- as.numeric(unlist(selectedDataPix_Base()[2]))
     
-   # thisUnit <- ifelse((compSelection() == "rel"| statSelection() == 4), "%", varUnits())
+    # thisUnit <- ifelse((compSelection() == "rel"| statSelection() == 4), "%", varUnits())
     thisUnit <- varUnits()
     
     # sort out limits of axes
-      yAxesLims <- c(axesLimits_Pix()$ymin, axesLimits_Pix()$ymax)
-      
-        if(input$graphType == "b") {
+    yAxesLims <- c(axesLimits_Pix()$ymin, axesLimits_Pix()$ymax)
+    
+    if(input$graphType == "b") {
       
       boxplot(x,
               main=" ",
@@ -594,18 +589,18 @@ server <- function(input, output) {
               xlab=paste0(mainVarSelec()," (", thisUnit,")"),
               pch = 20, cex = 3)
       points(clusters()$centers, pch = 4, cex = 4, lwd = 4) 
-
-    } else {
-    
-    bins <- seq(min(x), max(x), length.out = input$bins + 1)
       
-    hist(x,
-         main=" ",
-         col = "lightgrey",
-         breaks = bins,
-         xlim= yAxesLims,
-         xlab=paste0(mainVarSelec()," (", thisUnit,")"),
-         pch = 20, cex = 3)
+    } else {
+      
+      bins <- seq(min(x), max(x), length.out = input$bins + 1)
+      
+      hist(x,
+           main=" ",
+           col = "lightgrey",
+           breaks = bins,
+           xlim= yAxesLims,
+           xlab=paste0(mainVarSelec()," (", thisUnit,")"),
+           pch = 20, cex = 3)
     }
     
     
@@ -618,23 +613,23 @@ server <- function(input, output) {
     
     x    <- as.numeric(unlist(selectedDataPix_Alt()[2]))
     
-   # thisUnit <- ifelse((compSelection() == "rel"| statSelection() == 4), "%", varUnits()) # FIXME: remove code duplication
+    # thisUnit <- ifelse((compSelection() == "rel"| statSelection() == 4), "%", varUnits()) # FIXME: remove code duplication
     thisUnit <- varUnits()
     
     if(input$graphType == "b") {
-    
-    boxplot(x,
-            main= " ",
-            col = "lightgrey",
-            horizontal=TRUE,
-            ylim=c(axesLimits_Pix()$ymin, axesLimits_Pix()$ymax),
-            xlab=paste0(mainVarSelec()," (", thisUnit,")"),
-            pch = 20, cex = 3)
-    points(clusters()$centers, pch = 4, cex = 4, lwd = 4) 
-    
+      
+      boxplot(x,
+              main= " ",
+              col = "lightgrey",
+              horizontal=TRUE,
+              ylim=c(axesLimits_Pix()$ymin, axesLimits_Pix()$ymax),
+              xlab=paste0(mainVarSelec()," (", thisUnit,")"),
+              pch = 20, cex = 3)
+      points(clusters()$centers, pch = 4, cex = 4, lwd = 4) 
+      
     } else {
       
-            bins <- seq(min(x), max(x), length.out = input$bins + 1)
+      bins <- seq(min(x), max(x), length.out = input$bins + 1)
       
       hist(x,
            main=" ",
@@ -670,14 +665,14 @@ server <- function(input, output) {
               main= " ",
               col = "lightgrey",
               horizontal=TRUE,
-        #      ylim=c(min(min(bas,alt)), max(max(bas,alt))),
+              #      ylim=c(min(min(bas,alt)), max(max(bas,alt))),
               xlab=paste0("Difference in ", mainVarSelec()," (", thisUnit,")"),
               pch = 20, cex = 3)
       points(clusters()$centers, pch = 4, cex = 4, lwd = 4) 
       
     } else {
       
-     x <- as.numeric(unlist(x))
+      x <- as.numeric(unlist(x))
       
       bins <- seq(min(x), max(x), length.out = input$bins + 1)
       
@@ -686,7 +681,7 @@ server <- function(input, output) {
            main=" ",
            col = "lightgrey",
            breaks = bins,
-        #   xlim=c(axesLimits_Pix()$ymin, axesLimits_Pix()$ymax),
+           #   xlim=c(axesLimits_Pix()$ymin, axesLimits_Pix()$ymax),
            xlab=paste0("Difference in ",mainVarSelec()," (", thisUnit,")"),
            pch = 20, cex = 3)
     }
@@ -694,7 +689,7 @@ server <- function(input, output) {
     
   })
   
-
+  
   # RASTERISE DFs ------------------------------------------ FIXME: Not fully working yet
   
   # FIXME: Can u set up a rasterMyDf function to avoid this code duplication?
@@ -711,8 +706,8 @@ server <- function(input, output) {
   }
   
   # rasterise DFs with custumised function
- # base_rasterLayer <- rasterMyDf (rasterDF_Base())
- # base_rasterLayer <- rasterMyDf (rasterDF_Alt())
+  # base_rasterLayer <- rasterMyDf (rasterDF_Base())
+  # base_rasterLayer <- rasterMyDf (rasterDF_Alt())
   #diff_rasterLayer <- rasterMyDf (rasterDF_Diff()) # FIXME: This removes reactivity to layer change - TRY again now
   
   
@@ -748,7 +743,7 @@ server <- function(input, output) {
     r
   })
   
-
+  
   # MAPPING ---------------------------------------------------
   
   content <- paste(sep = "<br/>",
@@ -788,13 +783,14 @@ server <- function(input, output) {
                         values(base_rasterLayer()), na.color = "transparent")
     
     
-    valRasters <- c(rasterDF_Base()$thisVar, rasterDF_Alt()$thisVar)
+   # valRasters <- c(rasterDF_Base()$thisVar, rasterDF_Alt()$thisVar)
+    valRasters <- rasterDF_Base()$thisVar
     
     leafletProxy("basemap1", data = c(base_rasterLayer(), sl())) %>%
       clearGroup(group="Rasters") %>%
       clearControls() %>% # necessary to remove old legend
       addRasterImage(base_rasterLayer(),colors = pal, opacity = sl(), group = "Rasters") %>%
-    #  addLegend(pal = pal, values = values(base_rasterLayer()),
+      #  addLegend(pal = pal, values = values(base_rasterLayer()),
       addLegend(pal = pal, values = valRasters, 
                 title = varUnits()) # FIXME: Use % or CV% if relative selected
   })
@@ -805,18 +801,19 @@ server <- function(input, output) {
                         values(alt_rasterLayer()), na.color = "transparent")
     
     
-    valRasters <- c(rasterDF_Base()$thisVar, rasterDF_Alt()$thisVar)
+    # valRasters <- c(rasterDF_Base()$thisVar, rasterDF_Alt()$thisVar)
+    valRasters <- rasterDF_Alt()$thisVar
     
     leafletProxy("basemap2", data = c(alt_rasterLayer(), sl())) %>%
       clearGroup(group="Rasters") %>% 
       clearControls() %>% # necessary to remove old legend
       addRasterImage(alt_rasterLayer(),colors = pal, opacity = sl(), group = "Rasters") %>%
-    #  addLegend(pal = pal, values = values(alt_rasterLayer()), 
-                addLegend(pal = pal, values = valRasters, # FIXME: legend is rescaling
+      #  addLegend(pal = pal, values = values(alt_rasterLayer()), 
+      addLegend(pal = pal, values = valRasters, # FIXME: legend is rescaling
                 title = varUnits()) # FIXME: Use % or CV% if relative selected
   })
   
-    # add raster difference
+  # add raster difference
   observe({
     pal <- colorNumeric(c("#ffffe5", "#fff7bc", "#fee391","#fec44f","#fe9929","#ec7014","#cc4c02","#8c2d04"), 
                         values(diff_rasterLayer()), na.color = "transparent")
@@ -858,8 +855,8 @@ server <- function(input, output) {
       addLegend(pal = pal, values = valRasters, 
                 title = varUnits()) # FIXME: Use % or CV% if relative selected
   })
-
-    # add polygon custom function
+  
+  # add polygon custom function
   addMyPolygon <- function (x, y) {
     leafletProxy(x, data = y) %>%
       addPolygons(data=y, fill = F ,opacity = 0.7, weight = 2, group = "Catchment Borders") %>%       
@@ -868,10 +865,10 @@ server <- function(input, output) {
         options = layersControlOptions(collapsed = FALSE))
   }
   
- # addMyPolygon("basemap1",sf2)
- # addMyPolygon("basemap2",sf2)
- # addMyPolygon("basemap3",sf2)
- # addMyPolygon("basemap4",sf2)
+  # addMyPolygon("basemap1",sf2)
+  # addMyPolygon("basemap2",sf2)
+  # addMyPolygon("basemap3",sf2)
+  # addMyPolygon("basemap4",sf2)
   
   
   # GRAPHS ---------------------------------------------------------------------
@@ -910,26 +907,26 @@ server <- function(input, output) {
     
   })
   
-    # Tables for testing
+  # Tables for testing
   
   # Table raster1
   output$table1 <- renderTable({
- # rasterDF_Base()
+    # rasterDF_Base()
   })
   
   # Table raster2
   output$table2 <- renderTable({
-  #  rasterDF_Alt()
+    #  rasterDF_Alt()
   })
   
   # Table raster3 Used for testing
   output$table3 <- renderTable({
-   # rasterDF_Diff()
+    # rasterDF_Diff()
   })
   
   # Show variable name
   output$text1 <- renderText({ 
-  paste0("Variable unit is: ",varUnits())
+    paste0("Variable unit is: ",varUnits())
     
   })  
   
@@ -938,15 +935,15 @@ server <- function(input, output) {
     lat <-  as.numeric(as.character(input$basemap4_click$lat))
     lng <-  as.numeric(as.character(input$basemap4_click$lng))
     
-    lat.vec <- sort(as.numeric(unique(allData_1$thisLat)))
-    lng.vec <- sort(as.numeric(unique(allData_1$thisLong)))
+    lat.vec <- sort(as.numeric(unique(allData$thisLat)))
+    lng.vec <- sort(as.numeric(unique(allData$thisLong)))
     
     # FIXME: closest value needs to change to approx to deal with NAs
     lat.slc <- closestValue(lat,lat.vec)
     lng.slc <- closestValue(lng,lng.vec)
     
-   # lat.slc <- approx(lat,y = NULL,lat.vec, method="constant",rule = 2, f=1)
-   # lng.slc <- approx(lng,y = NULL, lng.vec,  method="constant",rule = 2, f=1)
+    # lat.slc <- approx(lat,y = NULL,lat.vec, method="constant",rule = 2, f=1)
+    # lng.slc <- approx(lng,y = NULL, lng.vec,  method="constant",rule = 2, f=1)
     
     paste0("Selected grid-cell has Latitude: ", lat.slc," Longitude: " ,lng.slc)
     
@@ -956,39 +953,39 @@ server <- function(input, output) {
   
   output$downloadData <- downloadHandler(
     
-   # ext <- ifelse(input$fileType == "txt",".txt",".tif"),
-
-   filename = function() { paste(input$mainvar, input$fileType, sep=".") },
-  
- #  filename = function() {paste0(input$mainvar,"_",input$compSelection,"_",input$statSelection,".",input$fileType) },
-
+    # ext <- ifelse(input$fileType == "txt",".txt",".tif"),
+    
+    filename = function() { paste(input$mainvar, input$fileType, sep=".") },
+    
+    #  filename = function() {paste0(input$mainvar,"_",input$compSelection,"_",input$statSelection,".",input$fileType) },
+    
     content = function(file) {
       
       df <- data.frame(lat = rasterDF_Diff()$thisLat, lon = rasterDF_Diff()$thisLong, Difference = rasterDF_Diff()$thisVar)
-
+      
       if(input$fileType == "txt") {
-      
-      thisHeader <- paste0("#",input$mainvar," ",varUnits()," ", as.character(statSelection()))
-      # FIME: Add header with meta-data
-     # writeLines(c("Hello","World"), file(file))
-      write.table(df, file, row.names=F)
-    #  write.csv(df, file ,row.names=F)
-      
+        
+        thisHeader <- paste0("#",input$mainvar," ",varUnits()," ", as.character(statSelection()))
+        # FIME: Add header with meta-data
+        # writeLines(c("Hello","World"), file(file))
+        write.table(df, file, row.names=F)
+        #  write.csv(df, file ,row.names=F)
+        
       } else {
         
-     # save as raster
-      r <- diff_rasterLayer()
-      proj4string(r) <- "+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"
-      
-      res <- writeRaster(r, filename=file, format="GTiff", overwrite=TRUE)
-      
-      # Show the corresponding output filename
-      print(res@file@name)
-      
-      # Rename it to the correct filename
-      file.rename(res@file@name, file)
-      
-      
+        # save as raster
+        r <- diff_rasterLayer()
+        proj4string(r) <- "+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"
+        
+        res <- writeRaster(r, filename=file, format="GTiff", overwrite=TRUE)
+        
+        # Show the corresponding output filename
+        print(res@file@name)
+        
+        # Rename it to the correct filename
+        file.rename(res@file@name, file)
+        
+        
       }
       
     }
