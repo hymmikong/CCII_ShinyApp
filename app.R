@@ -669,7 +669,7 @@ server <- function(input, output) {
     
     df_merge %>%
       ggplot(aes_string(x=input$xcol, y=mainVarSelec())) + 
-      geom_point(aes(colour = as.factor(scn)), size = 5) +
+      geom_point(aes(colour = as.factor(scn)), size = 3) +
       theme(legend.position = "top", text = element_text(size=20))
      # theme(legend.position = c(0.1, 0.8), text = element_text(size=20))
     
@@ -688,9 +688,10 @@ server <- function(input, output) {
     df_merge <- rbind(df_bas,df_alt)
     
     df_merge %>%
-      ggplot(aes_string(input$xcol)) + 
-      geom_density(aes(colour = as.factor(scn)), size = 5) +
-      theme(legend.position = "top", text = element_text(size=5))
+      ggplot(aes_string(mainVarSelec())) + 
+      geom_density(aes(colour = as.factor(scn)), size = 2) +
+      theme(legend.position = "top", text = element_text(size=20))+
+      ggtitle(as.character(input$mainvar))
     # theme(legend.position = c(0.1, 0.8), text = element_text(size=20))
     
   })
@@ -708,9 +709,10 @@ server <- function(input, output) {
     df_merge <- rbind(df_bas,df_alt)
     
     df_merge %>%
-      ggplot(aes_string(mainVarSelec())) + 
-      geom_density(aes(colour = as.factor(scn)), size = 5) +
-      theme(legend.position = "top", text = element_text(size=5))
+      ggplot(aes_string(input$xcol)) + 
+      geom_density(aes(colour = as.factor(scn)), size = 2) +
+      theme(legend.position = "top", text = element_text(size=20)) +
+      ggtitle(as.character(input$xcol))
     # theme(legend.position = c(0.1, 0.8), text = element_text(size=20))
     
   })
