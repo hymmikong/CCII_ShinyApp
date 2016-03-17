@@ -100,10 +100,8 @@ ui <- fluidPage(
                ),
                
                
-            
-               # input scenario 1 (baseline)
+          
 
-               
                # graph controls
                tags$hr(),
                h4(tags$b("Graphing set up")),
@@ -139,7 +137,7 @@ ui <- fluidPage(
     tabsetPanel(
       
       # tab - Spatial analysis
-      tabPanel("Spatial analysis",
+      tabPanel("Regional analysis",
                
                # main maps
                fluidRow(
@@ -179,15 +177,11 @@ ui <- fluidPage(
                
                fluidRow(
                  column(12,
-                        radioButtons("comp", "Comparison method (diff maps):",
+                        radioButtons("comp", "Comparison method",
                                      inline = TRUE,
                                      c("Absolute" = "abs","Relative (%)" = "rel"))
                  )
                ),
-               
-               
-               
-               
                
                h4(tags$b("Differences between selected scenarios")),
                leafletOutput("basemap3"),
@@ -239,12 +233,10 @@ ui <- fluidPage(
       tabPanel("Factor analysis",
                # input graphing details
                p(),
-               h4(tags$b("Relationship between output variables")),
+           #    h4(tags$b("Relationship between output variables")),
                p(),
                p(),
                selectInput('xcol', 'Select driving variable (X axes)', names(allData),selected = names(allData)[[12]]),
-               p(),
-               numericInput('clusters', 'Cluster count', 3, min = 1, max = 9),
                p(),
                h4(tags$b("Reference scenario")),
                p(),
@@ -255,7 +247,25 @@ ui <- fluidPage(
                #   plotOutput("plot2"),
                p(),
                #     selectInput('colFacet', 'Select factor for colour', names(allData),selected = names(allData)[[12]]),
-               p()
+               p(),
+               
+               
+               fluidRow(
+                 column(6,
+                        h4(tags$b("Relationship between variables")),
+                        plotOutput("plot2")
+                 ),
+                 column(6,
+                        h4(tags$b("Distribution")),
+                        p(),
+                        plotOutput("plot33")
+                 )
+               ),
+           
+           p(),
+           numericInput('clusters', 'Cluster count', 3, min = 1, max = 9)
+               
+
                #    selectInput('symFacet', 'Select factor for symbols', names(allData),selected = names(allData)[[12]])
       )
       
@@ -651,51 +661,64 @@ server <- function(input, output) {
     if (is.character(selectedData_Base()))
       return(NULL)
     
-    #  plot(selectedData_Base(),
-    #       main=" ",
-    # title("Title", line = -2),
-    #       col = cluster_Alt()$cluster,
-    #      xlim=c(axesLimits()$xmin, axesLimits()$xmax),
-    #       ylim=c(axesLimits()$ymin, axesLimits()$ymax),
-    #       pch = 20, cex = 3)
-    #  points(clusters()$centers, pch = 4, cex = 4, lwd = 4) 
-    
-    df_bas <- selectedData_Base()
+    df_bas <- selectedData_Base() # FIXME: repeated code: make it single
     df_bas$scn <- "base"
     df_alt <- selectedData_Alt()
     df_alt$scn <- "alt"
-    
     df_merge <- rbind(df_bas,df_alt)
     
-    #   ggplot(data=selectedData_Base()) + geom_point(aes_string(x=input$xcol, y=mainVarSelec()))
     df_merge %>%
-      ggplot(aes_string(x=input$xcol, y=mainVarSelec() )) + 
-      geom_point(aes(colour = as.factor(scn),size = 5)) +
-      theme(legend.position = c(0.1, 0.8))
-    #+ # Error; non-numeric argument to binary operator
-    #stat_smooth()
-    #+
-    #  theme(legend.position = c(0.9, 0.9)) # FIXME: not able to get rid of legend yet
+      ggplot(aes_string(x=input$xcol, y=mainVarSelec())) + 
+      geom_point(aes(colour = as.factor(scn)), size = 5) +
+      theme(legend.position = "top", text = element_text(size=20))
+     # theme(legend.position = c(0.1, 0.8), text = element_text(size=20))
+    
   })
-  
+
   # alternative graph
   output$plot2 <- renderPlot({
-    par(mar = c(5.1, 4.1, 2, 1))
     
-    #    plot(selectedData_Alt(),
-    #         main=" ",
-    #  title(main ="Title", line = -2),
-    #       xlim=c(axesLimits()$xmin, axesLimits()$xmax),
-    #      ylim=c(axesLimits()$ymin, axesLimits()$ymax),
-    #         col = cluster_Alt()$cluster,
-    #        pch = 20, cex = 3)
-    #   points(cluster_Alt()$centers, pch = 4, cex = 4, lwd = 4) 
+    if (is.character(selectedData_Base()))
+      return(NULL)
     
-    ggplot(data=selectedData_Alt()) + 
-      geom_point(aes_string(x=input$xcol, y=mainVarSelec())) 
-    #   facet_grid(input$colFacet ~ input.symFacet) # FIXME: the df has to bring all factors
+    df_bas <- selectedData_Base() # FIXME: repeated code: make it single
+    df_bas$scn <- "base"
+    df_alt <- selectedData_Alt()
+    df_alt$scn <- "alt"
+    df_merge <- rbind(df_bas,df_alt)
+    
+    df_merge %>%
+      ggplot(aes_string(input$xcol)) + 
+      geom_density(aes(colour = as.factor(scn)), size = 5) +
+      theme(legend.position = "top", text = element_text(size=5))
+    # theme(legend.position = c(0.1, 0.8), text = element_text(size=20))
     
   })
+  
+  
+  output$plot33 <- renderPlot({
+    
+    if (is.character(selectedData_Base()))
+      return(NULL)
+    
+    df_bas <- selectedData_Base() # FIXME: repeated code: make it single
+    df_bas$scn <- "base"
+    df_alt <- selectedData_Alt()
+    df_alt$scn <- "alt"
+    df_merge <- rbind(df_bas,df_alt)
+    
+    df_merge %>%
+      ggplot(aes_string(mainVarSelec())) + 
+      geom_density(aes(colour = as.factor(scn)), size = 5) +
+      theme(legend.position = "top", text = element_text(size=5))
+    # theme(legend.position = c(0.1, 0.8), text = element_text(size=20))
+    
+  })
+  
+  
+  
+  
+  
   
   # Distribution graphs (within pixel)-------------
   
