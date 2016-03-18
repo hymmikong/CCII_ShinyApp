@@ -75,7 +75,7 @@ ui <- fluidPage(
                radioButtons("stats", "Statistics:",
                             inline = TRUE,
                             c("Average" = "av","Variability (CV%)" = "cv")),
-
+               
                tags$hr(),
                h4(tags$b("Select scenario elements")),
                fluidRow(
@@ -100,8 +100,8 @@ ui <- fluidPage(
                ),
                
                
-          
-
+               
+               
                # graph controls
                tags$hr(),
                h4(tags$b("Graphing set up")),
@@ -186,7 +186,7 @@ ui <- fluidPage(
                h4(tags$b("Differences between selected scenarios")),
                leafletOutput("basemap3"),
                tags$hr(),
-
+               
                fluidRow(
                  column(6,
                         h4(tags$b("Distribution across all grid-cells")),
@@ -198,7 +198,7 @@ ui <- fluidPage(
                         plotOutput("plot5")
                  )
                )
-
+               
       ),
       
       
@@ -233,7 +233,7 @@ ui <- fluidPage(
       tabPanel("Factor analysis",
                # input graphing details
                p(),
-           #    h4(tags$b("Relationship between output variables")),
+               #    h4(tags$b("Relationship between output variables")),
                p(),
                p(),
                selectInput('xcol', 'Select driving variable (X axes)', names(allData),selected = names(allData)[[12]]),
@@ -261,11 +261,11 @@ ui <- fluidPage(
                         plotOutput("plot33")
                  )
                ),
-           
-           p(),
-           numericInput('clusters', 'Cluster count', 3, min = 1, max = 9)
                
-
+               p(),
+               numericInput('clusters', 'Cluster count', 3, min = 1, max = 9)
+               
+               
                #    selectInput('symFacet', 'Select factor for symbols', names(allData),selected = names(allData)[[12]])
       )
       
@@ -316,7 +316,7 @@ server <- function(input, output) {
     varDetails <-  selectedVars_df %>%
       filter(variable == mainVarSelec())
     # paste0("(",as.character(varDetails[,"unit"]),")") 
-   # as.character(varDetails[,"unit"]) 
+    # as.character(varDetails[,"unit"]) 
     
     ifelse(clickStats == "av",as.character(varDetails[,"unit"]), "CV%")
     
@@ -359,10 +359,10 @@ server <- function(input, output) {
     r <- allData %>%
       filter(
         thisRCP == rcp &
-        thisGCM == gcm &
-        CurrentCrop == crop & 
-               thisSoil == soil  &
-               thisScenario == scn) %>%
+          thisGCM == gcm &
+          CurrentCrop == crop & 
+          thisSoil == soil  &
+          thisScenario == scn) %>%
       dplyr::select(thisLat,thisLong, varSelection()) %>%
       group_by(thisLat, thisLong) %>%
       summarise_each(funs(mean,cvFunc)) %>%
@@ -383,9 +383,9 @@ server <- function(input, output) {
       filter(
         thisRCP == rcp &
           thisGCM == gcm &
-        CurrentCrop == crop & 
-               thisSoil == soil  &
-               thisScenario == scn) %>%
+          CurrentCrop == crop & 
+          thisSoil == soil  &
+          thisScenario == scn) %>%
       dplyr::select(thisLat,thisLong, varSelection()) %>%
       group_by(thisLat, thisLong) %>%
       summarise_each(funs(mean,cvFunc)) %>%
@@ -433,10 +433,10 @@ server <- function(input, output) {
     allData <- allData %>%
       filter(   
         thisRCP == rcp &
-        thisGCM == gcm &
-        CurrentCrop == crop & 
-                  thisSoil == soil  &
-                  thisScenario == scn
+          thisGCM == gcm &
+          CurrentCrop == crop & 
+          thisSoil == soil  &
+          thisScenario == scn
       )
     
     
@@ -454,10 +454,10 @@ server <- function(input, output) {
     allData <- allData %>%
       filter( 
         thisRCP == rcp &
-        thisGCM == gcm &
-        CurrentCrop == crop2 & 
-                thisSoil == soil2  &
-                thisScenario == scn2
+          thisGCM == gcm &
+          CurrentCrop == crop2 & 
+          thisSoil == soil2  &
+          thisScenario == scn2
       )
     allData[, c(input$xcol, mainVarSelec())]
   })
@@ -513,7 +513,7 @@ server <- function(input, output) {
       filter( #Lat_Long == gc &
         thisRCP == rcp &
           thisGCM == gcm &
-        thisLat == lat &
+          thisLat == lat &
           thisLong == lng &
           CurrentCrop == crop & 
           thisSoil == soil  &
@@ -547,7 +547,7 @@ server <- function(input, output) {
       filter( #Lat_Long == gc & # Note that's the same lat/long for both graphs
         thisRCP == rcp &
           thisGCM == gcm &
-        thisLat == lat &
+          thisLat == lat &
           thisLong == lng &
           CurrentCrop == crop2 & 
           thisSoil == soil2  &
@@ -598,8 +598,8 @@ server <- function(input, output) {
   
   # histogram
   output$plot10 <- renderPlot({
-
-   # par(mar = c(5.1, 4.1, 2, 1))
+    
+    # par(mar = c(5.1, 4.1, 2, 1))
     
     x    <- as.numeric(unlist(selectedData_Base()[2]))
     
@@ -683,7 +683,7 @@ server <- function(input, output) {
   
   # XY scatter graph 
   output$plot1 <- renderPlot({
-
+    
     if (is.character(selectedData_Base()))
       return(NULL)
     
@@ -697,10 +697,10 @@ server <- function(input, output) {
       ggplot(aes_string(x=input$xcol, y=mainVarSelec())) + 
       geom_point(aes(colour = as.factor(scn)), size = 3) +
       theme(legend.position = "top", text = element_text(size=20))
-     # theme(legend.position = c(0.1, 0.8), text = element_text(size=20))
+    # theme(legend.position = c(0.1, 0.8), text = element_text(size=20))
     
   })
-
+  
   # alternative graph
   output$plot2 <- renderPlot({
     
@@ -967,7 +967,7 @@ server <- function(input, output) {
                         values(base_rasterLayer()), na.color = "transparent")
     
     
-   # valRasters <- c(rasterDF_Base()$thisVar, rasterDF_Alt()$thisVar)
+    # valRasters <- c(rasterDF_Base()$thisVar, rasterDF_Alt()$thisVar)
     valRasters <- rasterDF_Base()$thisVar
     
     leafletProxy("basemap1", data = c(base_rasterLayer(), sl())) %>%
