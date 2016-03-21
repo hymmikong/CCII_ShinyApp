@@ -595,19 +595,29 @@ server <- function(input, output) {
     x
   })
   
+  # For the selection of pooled value in rasters
+  axesLimits_Ras <- reactive({
+    xmin <- min(min(rasterDF_Base()[3]), min(rasterDF_Alt()[3]))
+    xmax <- max(max(rasterDF_Base()[3]), max(rasterDF_Alt()[3]))
+    ymin <- min(min(rasterDF_Base()[3]), min(rasterDF_Alt()[3]))
+    ymax <- max(max(rasterDF_Base()[3]), max(rasterDF_Alt()[3]))
+    x <- data.frame(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax)
+    x
+  })
+  
   
   # histogram
   output$plot10 <- renderPlot({
     
     # par(mar = c(5.1, 4.1, 2, 1))
     
-    x    <- as.numeric(unlist(selectedData_Base()[2]))
+    x    <- as.numeric(unlist(rasterDF_Base()[3]))
     
     # thisUnit <- ifelse((compSelection() == "rel"| statSelection() == 4), "%", varUnits())
     thisUnit <- varUnits()
     
     # sort out limits of axes
-    yAxesLims <- c(axesLimits()$ymin, axesLimits()$ymax)
+    yAxesLims <- c(axesLimits_Ras()$ymin, axesLimits_Ras()$ymax)
     
     if(input$graphType == "b") {
       
@@ -644,13 +654,13 @@ server <- function(input, output) {
     
     # par(mar = c(5.1, 4.1, 2, 1))
     
-    x    <- as.numeric(unlist(selectedData_Alt()[2]))
+    x    <- as.numeric(unlist(rasterDF_Alt()[3]))
     
     # thisUnit <- ifelse((compSelection() == "rel"| statSelection() == 4), "%", varUnits())
     thisUnit <- varUnits()
     
     # sort out limits of axes
-    yAxesLims <- c(axesLimits()$ymin, axesLimits()$ymax)
+    yAxesLims <- c(axesLimits_Ras()$ymin, axesLimits_Ras()$ymax)
     
     if(input$graphType == "b") {
       
@@ -696,6 +706,7 @@ server <- function(input, output) {
     df_merge %>%
       ggplot(aes_string(x=input$xcol, y=mainVarSelec())) + 
       geom_point(aes(colour = as.factor(scn)), size = 3) +
+      geom_smooth(aes(colour = as.factor(scn)))+
       theme(legend.position = "top", text = element_text(size=20))
     # theme(legend.position = c(0.1, 0.8), text = element_text(size=20))
     
