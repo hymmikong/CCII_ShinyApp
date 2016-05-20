@@ -20,10 +20,11 @@ library(htmltools)
 #install.packages('raster', repos = 'http://r-forge.r-project.org/', type = 'source') # using new raster lib
 
 # load raw data
-allData <- read.csv("C:\\GitHubRepos\\CCII_ShinyApp\\data\\AllData(RA2)_v2.csv", header = TRUE)
+allData <- read.csv("C:\\GitHubRepos\\CCII_ShinyApp\\data\\AllData(RA2).csv", header = TRUE)
 
 # Select variables of interest based on listed outputs
-varList <- read.csv("C:\\GitHubRepos\\CCII_ShinyApp\\data\\variableNames_v2.csv", header = TRUE)
+varList <- read.csv("C:\\GitHubRepos\\CCII_ShinyApp\\data\\variableNames_v3.csv", header = TRUE)
+
 selectedVars_df <- varList %>%
   filter(include == "yes")
 
@@ -82,18 +83,20 @@ ui <- fluidPage(
                  column(6,
                         h4(tags$b("Refence")),
                         selectInput('gcm', 'GCM #1', as.character(unique(allData$thisGCM))),
-                        selectInput('rcp', 'RCP #1', as.character(unique(allData$thisRCP))),
+                        selectInput('rcp', 'Scenario #1', as.character(unique(allData$thisRCP))),
                         selectInput('scn', 'Time #1', as.character(unique(allData$thisScenario))),
-                        selectInput('crop', 'Cultivar #1', as.character(unique(allData$CurrentCrop))),
+                        selectInput('crop', 'Crop #1', as.character(unique(allData$thisCrop))),
+                        selectInput('cult', 'Cultivar #1', as.character(unique(allData$thisCultivar))),
                         selectInput('soil', 'Soil #1 ', as.character(unique(allData$thisSoil)))
                         
                  ),
                  column(6,
                         h4(tags$b("Alternative")),
                         selectInput('gcm2','GCM #2', as.character(unique(allData$thisGCM))),
-                        selectInput('rcp2', 'RCP #2', as.character(unique(allData$thisRCP))),
+                        selectInput('rcp2', 'Scenario #2', as.character(unique(allData$thisRCP))),
                         selectInput('scn2', 'Time #2', as.character(unique(allData$thisScenario)),selected = as.character(unique(allData$thisScenario))[[1]]),
-                        selectInput('crop2', 'Cultivar #2', as.character(unique(allData$CurrentCrop))),
+                        selectInput('crop2', 'Crop #2', as.character(unique(allData$thisCrop))),
+                        selectInput('cult2', 'Cultivar #2', as.character(unique(allData$thisCultivar))),
                         selectInput('soil2', 'Soil #2', as.character(unique(allData$thisSoil)))
                         
                  )
@@ -349,10 +352,12 @@ server <- function(input, output) {
   
   # baseline scenario
   rasterDF_Base <- reactive({
+    
     # define scenario
     gcm <- input$gcm
     rcp <- input$rcp
     crop <- input$crop
+    cult <- input$cult
     soil <- input$soil
     scn <- input$scn
     
@@ -360,7 +365,8 @@ server <- function(input, output) {
       filter(
         thisRCP == rcp &
           thisGCM == gcm &
-          CurrentCrop == crop & 
+          thisCrop == crop & 
+          thisCultivar == cult & 
           thisSoil == soil  &
           thisScenario == scn) %>%
       dplyr::select(thisLat,thisLong, varSelection()) %>%
@@ -368,6 +374,7 @@ server <- function(input, output) {
       summarise_each(funs(mean,cvFunc)) %>%
       dplyr::select(thisLat, thisLong, thisVar = statSelection())
     r
+    
   })
   
   # alternative scenario
@@ -376,6 +383,7 @@ server <- function(input, output) {
     gcm <- input$gcm2
     rcp <- input$rcp2
     crop <- input$crop2
+    cult <- input$cult2
     soil <- input$soil2
     scn <- input$scn2
     
@@ -383,7 +391,8 @@ server <- function(input, output) {
       filter(
         thisRCP == rcp &
           thisGCM == gcm &
-          CurrentCrop == crop & 
+          thisCrop == crop & 
+          thisCultivar == cult &
           thisSoil == soil  &
           thisScenario == scn) %>%
       dplyr::select(thisLat,thisLong, varSelection()) %>%
@@ -427,6 +436,7 @@ server <- function(input, output) {
     rcp <- input$rcp
     gcm <- input$gcm
     crop <- input$crop
+    cult <- input$cult
     soil <- input$soil
     scn <- input$scn
     
@@ -434,13 +444,15 @@ server <- function(input, output) {
       filter(   
         thisRCP == rcp &
           thisGCM == gcm &
-          CurrentCrop == crop & 
+          thisCrop == crop & 
+          thisCultivar == cult &
           thisSoil == soil  &
           thisScenario == scn
       )
     
     
     allData[, c(input$xcol, mainVarSelec())]
+    
   })
   
   # select driving variable for graph (X axes)
@@ -448,6 +460,7 @@ server <- function(input, output) {
     rcp <- input$rcp2
     gcm <- input$gcm2
     crop2 <- input$crop2
+    cult2 <- input$cult2
     soil2 <- input$soil2
     scn2 <- input$scn2
     
@@ -455,7 +468,8 @@ server <- function(input, output) {
       filter( 
         thisRCP == rcp &
           thisGCM == gcm &
-          CurrentCrop == crop2 & 
+          thisCrop == crop2 & 
+          thisCultivar == cult2 &
           thisSoil == soil2  &
           thisScenario == scn2
       )
@@ -506,6 +520,7 @@ server <- function(input, output) {
     rcp <- input$rcp
     gcm <- input$gcm
     crop <- input$crop
+    cult <- input$cult
     soil <- input$soil
     scn <- input$scn
     
@@ -515,7 +530,8 @@ server <- function(input, output) {
           thisGCM == gcm &
           thisLat == lat &
           thisLong == lng &
-          CurrentCrop == crop & 
+          thisCrop == crop &
+          thisCultivar == cult &
           thisSoil == soil  &
           thisScenario == scn
       )
@@ -540,6 +556,7 @@ server <- function(input, output) {
     rcp <- input$rcp2
     gcm <- input$gcm2
     crop2 <- input$crop2
+    cult2 <- input$cult2
     soil2 <- input$soil2
     scn2 <- input$scn2
     
@@ -549,7 +566,8 @@ server <- function(input, output) {
           thisGCM == gcm &
           thisLat == lat &
           thisLong == lng &
-          CurrentCrop == crop2 & 
+          thisCrop == crop2 & 
+          thisCultivar == cult2 &
           thisSoil == soil2  &
           thisScenario == scn2
       )
