@@ -60,7 +60,7 @@ sf2 <- readShapeSpatial(pathShapeFile, proj4string = CRS("+proj=longlat +datum=W
 
 ui <- fluidPage(
   
-  headerPanel('Analysis App - RA2 CCII-MBIE Broadacre Crops'),
+  headerPanel('Spatial analysis App - RA2 CCII-MBIE - Arable Crops'),
   p(),
   
   # Side panel details
@@ -101,8 +101,6 @@ ui <- fluidPage(
                         
                  )
                ),
-               
-               
                
                
                # graph controls
