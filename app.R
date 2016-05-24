@@ -84,7 +84,7 @@ ui <- fluidPage(
                         h4(tags$b("Refence")),
                         selectInput('gcm', 'GCM #1', as.character(unique(allData$thisGCM)),selected = as.character(unique(allData$thisGCM))[[2]]),
                         selectInput('rcp', 'Scenario #1', as.character(unique(allData$thisRCP)),selected = as.character(unique(allData$thisRCP))[[2]]),
-                        selectInput('scn', 'Time #1', as.character(unique(allData$thisScenario)),selected = as.character(unique(allData$thisScenario))[[2]]),
+                        selectInput('scn', 'Time #1', as.character(unique(allData$thisScenario)),selected = as.character(unique(allData$thisScenario))[[1]]),
                         selectInput('crop', 'Crop #1', as.character(unique(allData$thisCrop))),
                         selectInput('cult', 'Cultivar #1', as.character(unique(allData$thisCultivar))),
                         selectInput('soil', 'Soil #1 ', as.character(unique(allData$thisSoil)))
@@ -94,7 +94,7 @@ ui <- fluidPage(
                         h4(tags$b("Alternative")),
                         selectInput('gcm2','GCM #2', as.character(unique(allData$thisGCM)),selected = as.character(unique(allData$thisGCM))[[2]]),
                         selectInput('rcp2', 'Scenario #2', as.character(unique(allData$thisRCP)),selected = as.character(unique(allData$thisRCP))[[2]]),
-                        selectInput('scn2', 'Time #2', as.character(unique(allData$thisScenario)),selected = as.character(unique(allData$thisScenario))[[2]]),
+                        selectInput('scn2', 'Time #2', as.character(unique(allData$thisScenario)),selected = as.character(unique(allData$thisScenario))[[1]]),
                         selectInput('crop2', 'Crop #2', as.character(unique(allData$thisCrop))),
                         selectInput('cult2', 'Cultivar #2', as.character(unique(allData$thisCultivar))),
                         selectInput('soil2', 'Soil #2', as.character(unique(allData$thisSoil)))
@@ -158,11 +158,11 @@ ui <- fluidPage(
                # Add other fluid row here for graphs???? FIXME
                # main graphs
                fluidRow(
-                 column(6,
-                        p(),
-                        plotOutput("plot10")
-                 ),
-                 column(6,
+             #    column(6,
+             #           p(),
+             #           plotOutput("plot10")
+             #    ),
+                 column(12,
                         p(),
                         plotOutput("plot11")
                  )
@@ -659,14 +659,14 @@ server <- function(input, output) {
            pch = 20, cex = 3)
     }
     
-    
+
   })
   
   
   # alternative
   
   # histogram
-  output$plot11 <- renderPlot({
+  output$plotxx <- renderPlot({
     
     # par(mar = c(5.1, 4.1, 2, 1))
     
@@ -704,6 +704,31 @@ server <- function(input, output) {
     
     
   })
+  
+  
+  # -------------
+  # test ggplot
+  # ------------
+  output$plot11 <- renderPlot({ 
+    
+    if (is.character(selectedData_Base()))
+      return(NULL)
+    
+    df_bas <- selectedData_Base() # FIXME: repeated code: make it single
+    df_bas$scn <- "base"
+    df_alt <- selectedData_Alt()
+    df_alt$scn <- "alt"
+    df_merge <- rbind(df_bas,df_alt)
+    
+
+    df_merge %>%
+      ggplot(aes_string(mainVarSelec()), aes(..count..)) + 
+      geom_density(aes(colour = as.factor(scn),fill = as.factor(scn)), size = 2, alpha = 0.5) +
+      theme(legend.position = "top", text = element_text(size=20))+
+      ggtitle(as.character(input$mainvar))
+    # theme(legend.position = c(0.1, 0.8), text = element_text(size=20))
+    
+    })
   
   # X Y graphic comparison of variables----------
   
