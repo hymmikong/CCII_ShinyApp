@@ -31,6 +31,9 @@ selectedVars_df <- varList %>%
 all.factors <- varList %>%
   filter(is.factor == "yes")
 
+numVars_df <- varList %>%
+  filter(is.factor == "no")
+
 varNames <- as.character(selectedVars_df$variable)
 
 # find col positions that hold the variables of interest in the raw df
@@ -40,6 +43,8 @@ allData <- allData  %>%
   dplyr::select(selectColNos)
 
 fullNames <- as.character(selectedVars_df$fullName)
+
+numVarNames <- as.character(numVars_df$fullName)
 
 # Customise data (FIXME: this should be done earlier in raw dataset)
 allData <- allData %>%
@@ -65,7 +70,7 @@ ui <- fluidPage(
   
   # Side panel details
   sidebarPanel(width = 2,
-               selectInput('mainvar', 'Select the output variable:', fullNames, selected = fullNames[12]),
+               selectInput('mainvar', 'Select the output variable:', fullNames, selected = numVarNames[20]),
                
                # Show selection
                textOutput("text1"),
@@ -158,12 +163,15 @@ ui <- fluidPage(
                # Add other fluid row here for graphs???? FIXME
                # main graphs
                fluidRow(
-             #    column(6,
-             #           p(),
-             #           plotOutput("plot10")
-             #    ),
-                 column(12,
+                 column(6,
                         p(),
+                        h4(tags$b("Differences between selected scenarios")),
+             #           plotOutput("plot10")
+                        leafletOutput("basemap3")
+                 ),
+                 column(6,
+                        p(),
+                        h4(tags$b("Frequency distribution of values in grid-cells")),
                         plotOutput("plot11")
                  )
                )
@@ -185,7 +193,7 @@ ui <- fluidPage(
                ),
                
                h4(tags$b("Differences between selected scenarios")),
-               leafletOutput("basemap3"),
+             #  leafletOutput("basemap3"),
                tags$hr(),
                
                fluidRow(
@@ -720,7 +728,7 @@ server <- function(input, output) {
     df_alt$scn <- "alt"
     df_merge <- rbind(df_bas,df_alt)
     
-
+    # FIXME: this has to select CV when stat option is ticked
     df_merge %>%
       ggplot(aes_string(mainVarSelec()), aes(..count..)) + 
       geom_density(aes(colour = as.factor(scn),fill = as.factor(scn)), size = 2, alpha = 0.5) +
@@ -767,14 +775,14 @@ server <- function(input, output) {
     
     df_merge %>%
       ggplot(aes_string(mainVarSelec())) + 
-      geom_density(aes(colour = as.factor(scn)), size = 2) +
+      geom_density(aes( fill = as.factor(scn), alpha= 0.5, colour = as.factor(scn))) + # , fill = as.factor(scn),  alpha = 0.5
       theme(legend.position = "top", text = element_text(size=20))+
       ggtitle(as.character(input$mainvar))
     # theme(legend.position = c(0.1, 0.8), text = element_text(size=20))
     
   })
   
-  
+ 
   output$plot33 <- renderPlot({
     
     if (is.character(selectedData_Base()))
@@ -788,7 +796,7 @@ server <- function(input, output) {
     
     df_merge %>%
       ggplot(aes_string(input$xcol)) + 
-      geom_density(aes(colour = as.factor(scn)), size = 2) +
+      geom_density(aes(fill = as.factor(scn), alpha= 0.5, colour = as.factor(scn))) + # order of factors matter
       theme(legend.position = "top", text = element_text(size=20)) +
       ggtitle(as.character(input$xcol))
     # theme(legend.position = c(0.1, 0.8), text = element_text(size=20))
