@@ -76,7 +76,7 @@ ui <- fluidPage(
                textOutput("text1"),
                
                tags$hr(),
-               h4(tags$b("Select scenario elements")),
+               h4(tags$b("Construct contrating scenarios:")),
                fluidRow(
                  column(6,
                         h4(tags$b("Refence")),
@@ -322,6 +322,21 @@ server <- function(input, output) {
   
   
   # -------------- Reactive expressions to filter data of BASE raster ------------------
+  
+  
+  # flags to show which factors are being compared
+  compareFacts <- reactive({ # aims to substiture most varNames
+
+  f1 <-  ifelse(input$gcm == input$gcm2,"=", "GCM")
+  f2 <-  ifelse(input$rcp == input$rcp2,"=", "Climate scenario")
+  f3 <-  ifelse(input$scn == input$scn2,"=", "Time slice")
+  f4 <-  ifelse(input$crop == input$crop2,"=", "Time slice")
+  f5 <-  ifelse(input$cult == input$cult2,"=", "Cultivar")
+  f6 <-  ifelse(input$soil == input$soil2,"=", "Soil")
+    
+  as.character(paste0("Scenarios differ by: ", f1," ", f2, " ", f3, " ",f4," ", f5," ", f6))
+    
+  })
   
   # Name of selected variable in original file. Converts "selected" name to name in "raw" data
   mainVarSelec <- reactive({ # aims to substiture most varNames
@@ -744,8 +759,10 @@ server <- function(input, output) {
     df_merge %>%
       ggplot(aes_string(mainVarSelec()), aes(..count..)) + 
       geom_density(aes(colour = as.factor(scn),fill = as.factor(scn)), size = 2, alpha = 0.5) +
-      theme(legend.position = "top", text = element_text(size=20))+
-      ggtitle(as.character(input$mainvar))
+      theme(legend.position = c(.1, .9),text = element_text(size=20)) +
+     # scale_colour_brewer(name = "Scenario", ) +
+     # ggtitle(as.character(input$mainvar)) +
+      scale_x_continuous(name=paste0(as.character(input$mainvar)," (",as.character(varUnits()),")"))
     # theme(legend.position = c(0.1, 0.8), text = element_text(size=20))
     
     })
@@ -768,7 +785,8 @@ server <- function(input, output) {
       ggplot(aes_string(x=input$xcol, y=mainVarSelec())) + 
       geom_point(aes(colour = as.factor(scn)), size = 3) +
       geom_smooth(aes(colour = as.factor(scn)))+
-      theme(legend.position = "top", text = element_text(size=20))
+      theme(legend.position = c(.1, .9),text = element_text(size=20)) +
+      scale_x_continuous(name=paste0(as.character(colnames(input$xcol))," (",as.character(varUnits()),")"))
     # theme(legend.position = c(0.1, 0.8), text = element_text(size=20))
     
   })
@@ -788,7 +806,7 @@ server <- function(input, output) {
     df_merge %>%
       ggplot(aes_string(mainVarSelec())) + 
       geom_density(aes( fill = as.factor(scn), alpha= 0.5, colour = as.factor(scn))) + # , fill = as.factor(scn),  alpha = 0.5
-      theme(legend.position = "top", text = element_text(size=20))+
+      theme(legend.position = c(.1, .9),text = element_text(size=20)) +
       ggtitle(as.character(input$mainvar))
     # theme(legend.position = c(0.1, 0.8), text = element_text(size=20))
     
@@ -809,8 +827,8 @@ server <- function(input, output) {
     df_merge %>%
       ggplot(aes_string(input$xcol)) + 
       geom_density(aes(fill = as.factor(scn), alpha= 0.5, colour = as.factor(scn))) + # order of factors matter
-      theme(legend.position = "top", text = element_text(size=20)) +
-      ggtitle(as.character(input$xcol))
+      theme(legend.position = c(.1, .9),text = element_text(size=20)) +
+      ggtitle(as.character(input$xcol)) 
     # theme(legend.position = c(0.1, 0.8), text = element_text(size=20))
     
   })
