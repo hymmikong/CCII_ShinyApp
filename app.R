@@ -439,7 +439,7 @@ server <- function(input, output) {
       )
     
     return(bf)
-    
+
   })
   
   # trim selected alternative scenario
@@ -525,47 +525,16 @@ server <- function(input, output) {
   
   # select full (all years) dataset of selected variable (i.e. Y axes, the variable rasterised)
   selectedData_Base <- reactive({
-    rcp <- input$rcp
-    gcm <- input$gcm
-    crop <- input$crop
-    cult <- input$cult
-    soil <- input$soil
-    scn <- input$scn
-    
-    allData <- allData %>%
-      filter(   
-        thisRCP == rcp &
-          thisGCM == gcm &
-          thisCrop == crop & 
-          thisCultivar == cult &
-          thisSoil == soil  &
-          thisScenario == scn
-      )
-    
-    
-    allData[, c(input$xcol, mainVarSelec())]
+
+    df_Base()[, c(input$xcol, mainVarSelec())] # filter only? FIXME: can yo graph directly from df_BAse?
     
   })
   
   # select driving variable for graph (X axes)
   selectedData_Alt <- reactive({
-    rcp <- input$rcp2
-    gcm <- input$gcm2
-    crop2 <- input$crop2
-    cult2 <- input$cult2
-    soil2 <- input$soil2
-    scn2 <- input$scn2
+
+    df_Alt()[, c(input$xcol, mainVarSelec())]
     
-    allData <- allData %>%
-      filter( 
-        thisRCP == rcp &
-          thisGCM == gcm &
-          thisCrop == crop2 & 
-          thisCultivar == cult2 &
-          thisSoil == soil2  &
-          thisScenario == scn2
-      )
-    allData[, c(input$xcol, mainVarSelec())]
   })
   
   
