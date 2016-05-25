@@ -472,22 +472,7 @@ server <- function(input, output) {
   # baseline scenario
   rasterDF_Base <- reactive({
     
-    # define scenario
-    gcm <- input$gcm
-    rcp <- input$rcp
-    crop <- input$crop
-    cult <- input$cult
-    soil <- input$soil
-    scn <- input$scn
-    
-    r <- allData %>%
-      filter(
-        thisRCP == rcp &
-          thisGCM == gcm &
-          thisCrop == crop & 
-          thisCultivar == cult & 
-          thisSoil == soil  &
-          thisScenario == scn) %>%
+   r <- df_Base() %>%
       dplyr::select(thisLat,thisLong, varSelection()) %>%
       group_by(thisLat, thisLong) %>%
       summarise_each(funs(mean,cvFunc)) %>%
@@ -498,27 +483,15 @@ server <- function(input, output) {
   
   # alternative scenario
   rasterDF_Alt <- reactive({
-    # define scenario
-    gcm <- input$gcm2
-    rcp <- input$rcp2
-    crop <- input$crop2
-    cult <- input$cult2
-    soil <- input$soil2
-    scn <- input$scn2
-    
-    r <- allData %>%
-      filter(
-        thisRCP == rcp &
-          thisGCM == gcm &
-          thisCrop == crop & 
-          thisCultivar == cult &
-          thisSoil == soil  &
-          thisScenario == scn) %>%
+
+      r <- df_Alt() %>%
       dplyr::select(thisLat,thisLong, varSelection()) %>%
       group_by(thisLat, thisLong) %>%
       summarise_each(funs(mean,cvFunc)) %>%
       dplyr::select(thisLat, thisLong, thisVar = statSelection())
+      
     r
+    
   })
   
   
