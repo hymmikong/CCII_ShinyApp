@@ -81,7 +81,7 @@ ui <- fluidPage(
                  column(5,
                         h4(tags$b("Refence")),
                         selectInput('gcm', 'GCM #1', as.character(unique(allData$thisGCM)),selected = as.character(unique(allData$thisGCM))[[2]]),
-                        selectInput('rcp', 'Scenario #1', as.character(unique(allData$thisRCP)),selected = as.character(unique(allData$thisRCP))[[2]]),
+                        selectInput('rcp', 'Climate #1', as.character(unique(allData$thisRCP)),selected = as.character(unique(allData$thisRCP))[[2]]),
                         selectInput('scn', 'Time #1', as.character(unique(allData$thisScenario)),selected = as.character(unique(allData$thisScenario))[[1]]),
                         selectInput('crop', 'Crop #1', as.character(unique(allData$thisCrop))),
                         selectInput('cult', 'Cultivar #1', as.character(unique(allData$thisCultivar))),
@@ -91,7 +91,7 @@ ui <- fluidPage(
                  column(5,
                         h4(tags$b("Alternative")),
                         selectInput('gcm2','GCM #2', as.character(unique(allData$thisGCM)),selected = as.character(unique(allData$thisGCM))[[2]]),
-                        selectInput('rcp2', 'Scenario #2', as.character(unique(allData$thisRCP)),selected = as.character(unique(allData$thisRCP))[[2]]),
+                        selectInput('rcp2', 'Climate #2', as.character(unique(allData$thisRCP)),selected = as.character(unique(allData$thisRCP))[[2]]),
                         selectInput('scn2', 'Time #2', as.character(unique(allData$thisScenario)),selected = as.character(unique(allData$thisScenario))[[1]]),
                         selectInput('crop2', 'Crop #2', as.character(unique(allData$thisCrop))),
                         selectInput('cult2', 'Cultivar #2', as.character(unique(allData$thisCultivar))),
@@ -136,11 +136,15 @@ ui <- fluidPage(
                # download controls
                tags$hr(),
                h4(tags$b("Download selected data")),
-               downloadButton("downloadData", "Download data"),
+               checkboxGroupInput("variable", "Select scenario(s):",
+                               c("Reference" = "dl_ref",
+                                 "Alternative" = "dl_alt",
+                                 "Difference between scenarios" = "dl_dif")),
                p(),
-               radioButtons("fileType", "Select type of file:",
+               radioButtons("fileType", "Select output format:",
                             inline = TRUE,
-                            c("Text" = "txt","GeoTiff" = "tif"))
+                            c("Text" = "txt","GeoTiff" = "tif")),
+            downloadButton("downloadData", "Download data")
   ),
   
   # Main panel details
