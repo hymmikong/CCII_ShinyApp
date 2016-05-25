@@ -161,18 +161,22 @@ ui <- fluidPage(
    
            # map controls
            fluidRow(
-             column(6,
+             column(4,
                     p(),
                     radioButtons("stats", "Choose statistics:",
                                  inline = TRUE,
-                                 c("Average" = "av","Variability (CV%)" = "cv")),
+                                 c("Average" = "av","Variability (CV%)" = "cv"))
+                    
+                   ),
+             column(4,
                     p(),
                     # select diff method
                     radioButtons("comp", "Comparison method",
                                  inline = TRUE,
                                  c("Absolute" = "abs","Relative (%)" = "rel"))
+                    
              ),
-             column(6,
+             column(4,
                     # raster transparency
                     p(),
                     sliderInput("slider1", 
