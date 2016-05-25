@@ -136,7 +136,7 @@ ui <- fluidPage(
                # download controls
                tags$hr(),
                h4(tags$b("Download selected data")),
-               radioButtons("dl_file", "Select output:",
+               radioButtons("fileToDownload", "Select output:",
                                inline = TRUE,
                                c("Reference" = "dl_ref",
                                  "Alternative" = "dl_alt",
@@ -416,6 +416,56 @@ server <- function(input, output) {
   
   
   # DATAFRAME subset -----------------------------------------------------------------
+  
+  # Create common trimmed dfs for use across other elements
+  
+  # trim selected reference (baseline) scenario
+  df_Base <- reactive ({
+    rcp <- input$rcp
+    gcm <- input$gcm
+    crop <- input$crop
+    cult <- input$cult
+    soil <- input$soil
+    scn <- input$scn
+    
+    bf <- allData %>%
+      filter(   
+        thisRCP == rcp &
+          thisGCM == gcm &
+          thisCrop == crop & 
+          thisCultivar == cult &
+          thisSoil == soil  &
+          thisScenario == scn
+      )
+    
+    return(bf)
+    
+  })
+  
+  # trim selected alternative scenario
+  df_Alt <- reactive ({
+    rcp <- input$rcp2
+    gcm <- input$gcm2
+    crop2 <- input$crop2
+    cult2 <- input$cult2
+    soil2 <- input$soil2
+    scn2 <- input$scn2
+    
+    bf <- allData %>%
+      filter( 
+        thisRCP == rcp &
+          thisGCM == gcm &
+          thisCrop == crop2 & 
+          thisCultivar == cult2 &
+          thisSoil == soil2  &
+          thisScenario == scn2
+      )
+    
+    return(bf)
+    
+  })
+  
+  
   
   # Raster dataframe (summarised by pixel with average or CV%) --------------
   
@@ -1293,11 +1343,18 @@ server <- function(input, output) {
   
   # DOWNLOAD  ----------------------------- FIXME: file content is not as expected
   
+  # select the output type (FIXME: why not do all in same txt file or zipped 3 raster for GeoTiff?)
+  datasetInput <- reactive({
+    switch(input$fileToDownload,
+           "dl_ref" = rasterDF_Base(),
+           "dl_alt" = rasterDF_Alt(),
+           "dl_dif" = rasterDF_Diff())
+  })
+  
+  
   output$downloadData <- downloadHandler(
     
     # ext <- ifelse(input$fileType == "txt",".txt",".tif"),
-    
-    # make a switch to select rasterasied df based on input$dl_file
     
     filename = function() { paste(input$mainvar, input$fileType, sep=".") },
     
@@ -1310,7 +1367,8 @@ server <- function(input, output) {
       # rasterDF_Alt()
       
       
-      df <- data.frame(lat = rasterDF_Diff()$thisLat, lon = rasterDF_Diff()$thisLong, Difference = rasterDF_Diff()$thisVar)
+   #   df <- data.frame(lat = rasterDF_Diff()$thisLat, lon = rasterDF_Diff()$thisLong, Difference = rasterDF_Diff()$thisVar)
+       df <- data.frame(lat = datasetInput()$thisLat, lon = datasetInput()$thisLong, Difference = datasetInput()$thisVar)
       
       if(input$fileType == "txt") {
         
