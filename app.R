@@ -69,7 +69,7 @@ ui <- fluidPage(
   p(),
   
   # Side panel details
-  sidebarPanel(width = 2,
+  sidebarPanel(width = 3,
                selectInput('mainvar', 'Select the output variable:', fullNames, selected = numVarNames[20]),
                
                # Show selection
@@ -78,7 +78,7 @@ ui <- fluidPage(
                tags$hr(),
                h4(tags$b("Construct contrating scenarios:")),
                fluidRow(
-                 column(6,
+                 column(5,
                         h4(tags$b("Refence")),
                         selectInput('gcm', 'GCM #1', as.character(unique(allData$thisGCM)),selected = as.character(unique(allData$thisGCM))[[2]]),
                         selectInput('rcp', 'Scenario #1', as.character(unique(allData$thisRCP)),selected = as.character(unique(allData$thisRCP))[[2]]),
@@ -88,7 +88,7 @@ ui <- fluidPage(
                         selectInput('soil', 'Soil #1 ', as.character(unique(allData$thisSoil)))
                         
                  ),
-                 column(6,
+                 column(5,
                         h4(tags$b("Alternative")),
                         selectInput('gcm2','GCM #2', as.character(unique(allData$thisGCM)),selected = as.character(unique(allData$thisGCM))[[2]]),
                         selectInput('rcp2', 'Scenario #2', as.character(unique(allData$thisRCP)),selected = as.character(unique(allData$thisRCP))[[2]]),
@@ -97,6 +97,26 @@ ui <- fluidPage(
                         selectInput('cult2', 'Cultivar #2', as.character(unique(allData$thisCultivar))),
                         selectInput('soil2', 'Soil #2', as.character(unique(allData$thisSoil)))
                         
+                 ),
+                 column(2,
+                        hr(),
+                        hr(),
+                        textOutput("flag_gcm"),
+                        hr(),
+                        hr(),
+                        textOutput("flag_rcp"),
+                        hr(),
+                        hr(),
+                        textOutput("flag_scn"),
+                        hr(),
+                        hr(),
+                        textOutput("flag_crop"),
+                        hr(),
+                        hr(),
+                        textOutput("flag_cult"),
+                        hr(),
+                        hr(),
+                        textOutput("flag_soil")
                  )
                ),
                
@@ -187,7 +207,7 @@ ui <- fluidPage(
                  ),
                  column(6,
                         p(),
-                        h4(tags$b("Frequency distribution of values in grid-cells")),
+                        h4(tags$b("Frequency distribution of values across all grid-cells")),
                         plotOutput("plot11")
                  )
                )
@@ -330,17 +350,19 @@ server <- function(input, output) {
   
   
   # flags to show which factors are being compared
-  compareFacts <- reactive({ # aims to substiture most varNames
+  flagFact <- reactive({ # aims to substiture most varNames
 
-  f1 <-  ifelse(input$gcm == input$gcm2,"=", "GCM")
-  f2 <-  ifelse(input$rcp == input$rcp2,"=", "Climate scenario")
-  f3 <-  ifelse(input$scn == input$scn2,"=", "Time slice")
-  f4 <-  ifelse(input$crop == input$crop2,"=", "Time slice")
-  f5 <-  ifelse(input$cult == input$cult2,"=", "Cultivar")
-  f6 <-  ifelse(input$soil == input$soil2,"=", "Soil")
+  f1 <-  ifelse(input$gcm == input$gcm2,"=", "Diff")
+  f2 <-  ifelse(input$rcp == input$rcp2,"=", "Diff")
+  f3 <-  ifelse(input$scn == input$scn2,"=", "Diff")
+  f4 <-  ifelse(input$crop == input$crop2,"=", "Diff")
+  f5 <-  ifelse(input$cult == input$cult2,"=", "Diff")
+  f6 <-  ifelse(input$soil == input$soil2,"=", "Diff")
     
-  as.character(paste0("Scenarios differ by: ", f1," ", f2, " ", f3, " ",f4," ", f5," ", f6))
-    
+ # as.character(paste0("Scenarios differ by: ", f1," ", f2, " ", f3, " ",f4," ", f5," ", f6))
+  f <- c(f1, f2, f3, f4, f5, f6)  
+  return(f)
+  
   })
   
   # Name of selected variable in original file. Converts "selected" name to name in "raw" data
@@ -1212,6 +1234,34 @@ server <- function(input, output) {
     paste0("Variable unit is: ",varUnits())
     
   })  
+  
+  
+  # text flags for selected scenarios
+  # Show variable name
+  output$flag_gcm <- renderText({ 
+    #paste0("gcm","0")
+    flagFact()[1]
+  }) 
+  output$flag_rcp <- renderText({ 
+    #paste0("rcp","0")
+    flagFact()[2]
+  }) 
+  output$flag_scn <- renderText({ 
+    #paste0("scn","0")
+    flagFact()[3]
+  }) 
+  output$flag_crop <- renderText({ 
+    #paste0("crop","0")
+    flagFact()[4]
+  }) 
+  output$flag_cult <- renderText({ 
+   # paste0("cult","0")
+    flagFact()[5]
+  }) 
+  output$flag_soil <- renderText({ 
+    paste0("soil","0")
+    flagFact()[6]
+  }) 
   
   # Show variable name (test only)
   output$text2 <- renderText({ 
