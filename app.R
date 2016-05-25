@@ -136,10 +136,11 @@ ui <- fluidPage(
                # download controls
                tags$hr(),
                h4(tags$b("Download selected data")),
-               checkboxGroupInput("variable", "Select scenario(s):",
+               radioButtons("dl_file", "Select output:",
+                               inline = TRUE,
                                c("Reference" = "dl_ref",
                                  "Alternative" = "dl_alt",
-                                 "Difference between scenarios" = "dl_dif")),
+                                 "Difference" = "dl_dif")),
                p(),
                radioButtons("fileType", "Select output format:",
                             inline = TRUE,
@@ -1296,11 +1297,18 @@ server <- function(input, output) {
     
     # ext <- ifelse(input$fileType == "txt",".txt",".tif"),
     
+    # make a switch to select rasterasied df based on input$dl_file
+    
     filename = function() { paste(input$mainvar, input$fileType, sep=".") },
     
     #  filename = function() {paste0(input$mainvar,"_",input$compSelection,"_",input$statSelection,".",input$fileType) },
     
     content = function(file) {
+      
+      # add a switch here to select the dataset (loop though?)
+      # rasterDF_Base()
+      # rasterDF_Alt()
+      
       
       df <- data.frame(lat = rasterDF_Diff()$thisLat, lon = rasterDF_Diff()$thisLong, Difference = rasterDF_Diff()$thisVar)
       
