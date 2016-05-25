@@ -785,8 +785,8 @@ server <- function(input, output) {
       ggplot(aes_string(x=input$xcol, y=mainVarSelec())) + 
       geom_point(aes(colour = as.factor(scn)), size = 3) +
       geom_smooth(aes(colour = as.factor(scn)))+
-      theme(legend.position = c(.1, .9),text = element_text(size=20)) +
-      scale_x_continuous(name=paste0(as.character(colnames(input$xcol))," (",as.character(varUnits()),")"))
+      theme(legend.position = c(.1, .9),text = element_text(size=20)) 
+    #  scale_x_continuous(name=paste0(as.character(?)," (",as.character(varUnits()),")")) FIXME: need a new var name and unit as render
     # theme(legend.position = c(0.1, 0.8), text = element_text(size=20))
     
   })
