@@ -102,22 +102,16 @@ ui <- fluidPage(
                
                
                # graph controls
-               tags$hr(),
-               h4(tags$b("Graphing set up")),
-               radioButtons("graphType", "Select type of graph:",
-                            inline = TRUE,
-                            c("Box plot" = "b","Histogram" = "h")),
-               sliderInput("bins",
-                           "Histogram number of bins:",
-                           min = 1,
-                           max = 20,
-                           value = 5),
-               
-               # raster transparency
-               p(),
-               sliderInput("slider1", 
-                           label = h4(tags$b("Raster transparency")), 
-                           min = 0, max = 1, value = 0.5),
+            #   tags$hr(),
+            #   h4(tags$b("Graphing set up")),
+            #   radioButtons("graphType", "Select type of graph:",
+            #                inline = TRUE,
+            #                c("Box plot" = "b","Histogram" = "h")),
+            #   sliderInput("bins",
+            #               "Histogram number of bins:",
+            #               min = 1,
+            #               max = 20,
+            #               value = 5),
                
                # download controls
                tags$hr(),
@@ -144,16 +138,26 @@ ui <- fluidPage(
    #            radioButtons("stats", "Choose statistics:",
    #                         inline = TRUE,
    #                         c("Average" = "av","Variability (CV%)" = "cv")),
-               
+   
            # map controls
            fluidRow(
              column(6,
+                    p(),
                     radioButtons("stats", "Choose statistics:",
                                  inline = TRUE,
-                                 c("Average" = "av","Variability (CV%)" = "cv"))
+                                 c("Average" = "av","Variability (CV%)" = "cv")),
+                    p(),
+                    # select diff method
+                    radioButtons("comp", "Comparison method",
+                                 inline = TRUE,
+                                 c("Absolute" = "abs","Relative (%)" = "rel"))
              ),
              column(6,
-              p()
+                    # raster transparency
+                    p(),
+                    sliderInput("slider1", 
+                                label = "Raster transparency", 
+                                min = 0, max = 1, value = 0.5)
              )
            ),
            
@@ -198,9 +202,10 @@ ui <- fluidPage(
                
                fluidRow(
                  column(12,
-                        radioButtons("comp", "Comparison method",
-                                     inline = TRUE,
-                                     c("Absolute" = "abs","Relative (%)" = "rel"))
+    #                    radioButtons("comp", "Comparison method",
+    #                                 inline = TRUE,
+    #                                 c("Absolute" = "abs","Relative (%)" = "rel"))
+                 p()
                  )
                ),
                
@@ -807,7 +812,8 @@ server <- function(input, output) {
       ggplot(aes_string(mainVarSelec())) + 
       geom_density(aes( fill = as.factor(scn), alpha= 0.5, colour = as.factor(scn))) + # , fill = as.factor(scn),  alpha = 0.5
       theme(legend.position = c(.1, .9),text = element_text(size=20)) +
-      ggtitle(as.character(input$mainvar))
+    #  ggtitle(as.character(input$mainvar)) +
+     scale_x_continuous(name=paste0(as.character(input$mainvar)," (",as.character(varUnits()),")"))
     # theme(legend.position = c(0.1, 0.8), text = element_text(size=20))
     
   })
@@ -827,8 +833,8 @@ server <- function(input, output) {
     df_merge %>%
       ggplot(aes_string(input$xcol)) + 
       geom_density(aes(fill = as.factor(scn), alpha= 0.5, colour = as.factor(scn))) + # order of factors matter
-      theme(legend.position = c(.1, .9),text = element_text(size=20)) +
-      ggtitle(as.character(input$xcol)) 
+      theme(legend.position = c(.1, .9),text = element_text(size=20)) # +
+    #  ggtitle(as.character(input$xcol)) 
     # theme(legend.position = c(0.1, 0.8), text = element_text(size=20))
     
   })
@@ -1046,7 +1052,7 @@ server <- function(input, output) {
   output$basemap3 <- createMainMap() # base 3 (for difference)
   output$basemap4 <- createMainMap() # base 4 (selected pixel)
   
-  # raster transparancy FIXME: not working yet
+  # raster transparancy 
   sl <- reactive ({
     input$slider1
   })
@@ -1089,7 +1095,10 @@ server <- function(input, output) {
   
   # add raster difference
   observe({
-    pal <- colorNumeric(c("#ffffe5", "#fff7bc", "#fee391","#fec44f","#fe9929","#ec7014","#cc4c02","#8c2d04"), 
+  #  pal <- colorNumeric(c("#ffffe5", "#fff7bc", "#fee391","#fec44f","#fe9929","#ec7014","#cc4c02","#8c2d04"), 
+  #                      values(diff_rasterLayer()), na.color = "transparent")
+    
+    pal <- colorNumeric(c("#8B0000","#EE4000", "#FFA500","#008B45"), 
                         values(diff_rasterLayer()), na.color = "transparent")
     
     lng <- ifelse(is.null(input$basemap3_click$lng), 178,input$basemap3_click$lng)
