@@ -75,13 +75,6 @@ ui <- fluidPage(
                # Show selection
                textOutput("text1"),
                
-               # input stats
-               tags$hr(),
-               h4(tags$b("Calculation details")),
-               radioButtons("stats", "Statistics:",
-                            inline = TRUE,
-                            c("Average" = "av","Variability (CV%)" = "cv")),
-               
                tags$hr(),
                h4(tags$b("Select scenario elements")),
                fluidRow(
@@ -145,6 +138,25 @@ ui <- fluidPage(
       # tab - Spatial analysis
       tabPanel("Regional analysis",
                
+               # input stats
+   #            tags$hr(),
+           #    h4(tags$b("Calculation details")),
+   #            radioButtons("stats", "Choose statistics:",
+   #                         inline = TRUE,
+   #                         c("Average" = "av","Variability (CV%)" = "cv")),
+               
+           # map controls
+           fluidRow(
+             column(6,
+                    radioButtons("stats", "Choose statistics:",
+                                 inline = TRUE,
+                                 c("Average" = "av","Variability (CV%)" = "cv"))
+             ),
+             column(6,
+              p()
+             )
+           ),
+           
                # main maps
                fluidRow(
                  column(6,
