@@ -574,30 +574,13 @@ server <- function(input, output) {
       lng <- coordSelectBaseMap3()[2]
     }
     
-    # Due to dplyr issue #318, we need temp variables for input values
-    # gc <- input$gc
-    # lat <- coordSelectBaseMap4()[1]
-    # lng <- coordSelectBaseMap4()[2]
-    rcp <- input$rcp
-    gcm <- input$gcm
-    crop <- input$crop
-    cult <- input$cult
-    soil <- input$soil
-    scn <- input$scn
-    
-    allData <- allData %>%
-      filter( #Lat_Long == gc &
-        thisRCP == rcp &
-          thisGCM == gcm &
-          thisLat == lat &
-          thisLong == lng &
-          thisCrop == crop &
-          thisCultivar == cult &
-          thisSoil == soil  &
-          thisScenario == scn
-      )
-    allData[, c(input$xcol, mainVarSelec())]
-    # allData[, mainVarSelec()]
+    # trim to selected coordinates FIXME: Untested
+    bf <- df_Base() %>%
+      filter(thisLat == lat &
+             thisLong == lng)
+
+    bf[, c(input$xcol, mainVarSelec())]
+
   })
   
   # Alternative
@@ -611,30 +594,14 @@ server <- function(input, output) {
       lat <- coordSelectBaseMap3()[1]
       lng <- coordSelectBaseMap3()[2]
     }
-    # gc <- input$gc
-    #   lat <- coordSelectBaseMap4()[1]
-    #   lng <- coordSelectBaseMap4()[2]
-    rcp <- input$rcp2
-    gcm <- input$gcm2
-    crop2 <- input$crop2
-    cult2 <- input$cult2
-    soil2 <- input$soil2
-    scn2 <- input$scn2
+
+    # trim to selected coordinates FIXME: Untested
+    bf <- df_Alt() %>%
+      filter(thisLat == lat &
+             thisLong == lng)
     
-    allData <- allData %>%
-      filter( #Lat_Long == gc & # Note that's the same lat/long for both graphs
-        thisRCP == rcp &
-          thisGCM == gcm &
-          thisLat == lat &
-          thisLong == lng &
-          thisCrop == crop2 & 
-          thisCultivar == cult2 &
-          thisSoil == soil2  &
-          thisScenario == scn2
-      )
-    
-    allData[, c(input$xcol, mainVarSelec())]
-    # allData[, mainVarSelec()]
+    bf[, c(input$xcol, mainVarSelec())]
+
   })
   
   
