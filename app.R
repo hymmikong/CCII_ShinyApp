@@ -217,7 +217,7 @@ ui <- fluidPage(
                p(),
                # h4(tags$b(textOutput("text2")),align = "center"), # lat/long
                p(),
-               h4(tags$b("Reference scenario")),
+               h4(tags$b("Inter-annual variability in selected pixel")),
                p(),
                plotOutput("plot3"),
                p(),
