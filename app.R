@@ -120,19 +120,6 @@ ui <- fluidPage(
                  )
                ),
                
-               
-               # graph controls
-            #   tags$hr(),
-            #   h4(tags$b("Graphing set up")),
-            #   radioButtons("graphType", "Select type of graph:",
-            #                inline = TRUE,
-            #                c("Box plot" = "b","Histogram" = "h")),
-            #   sliderInput("bins",
-            #               "Histogram number of bins:",
-            #               min = 1,
-            #               max = 20,
-            #               value = 5),
-               
                # download controls
                tags$hr(),
                h4(tags$b("Download selected data")),
@@ -223,40 +210,7 @@ ui <- fluidPage(
                
                
       ),
-      
-      # tab - Difference map analysis
-      tabPanel("Difference maps",
-               # show map
-               p(),
-               
-               fluidRow(
-                 column(12,
-    #                    radioButtons("comp", "Comparison method",
-    #                                 inline = TRUE,
-    #                                 c("Absolute" = "abs","Relative (%)" = "rel"))
-                 p()
-                 )
-               ),
-               
-               h4(tags$b("Differences between selected scenarios")),
-             #  leafletOutput("basemap3"),
-               tags$hr(),
-               
-               fluidRow(
-                 column(6,
-                        h4(tags$b("Distribution across all grid-cells")),
-                        plotOutput("plot7")
-                 ),
-                 column(6,
-                        h4(tags$b("Inter-annual variability within selected grid-cell:")),
-                        p(),
-                        plotOutput("plot5")
-                 )
-               )
-               
-      ),
-      
-      
+
       # tab - Grid cell analysis FIXME: to be moved to Difference map analysis
       tabPanel("Grid-cell analysis", 
                p(),
@@ -293,7 +247,7 @@ ui <- fluidPage(
                p(),
                selectInput('xcol', 'Select driving variable (X axes)', names(allData),selected = names(allData)[[12]]),
                p(),
-               h4(tags$b("Reference scenario")),
+               h4(tags$b("Relationship between selected variables")),
                p(),
                plotOutput("plot1"), 
                p(),
@@ -307,13 +261,13 @@ ui <- fluidPage(
                
                fluidRow(
                  column(6,
-                        h4(tags$b("Relationship between variables")),
-                        plotOutput("plot2")
+                        h4(tags$b("Distribution of X-axes values")),
+                        plotOutput("plot33")
                  ),
                  column(6,
-                        h4(tags$b("Distribution")),
+                        h4(tags$b("Distribution of Y-axes values")),
                         p(),
-                        plotOutput("plot33")
+                        plotOutput("plot2")
                  )
                ),
                
@@ -353,6 +307,11 @@ server <- function(input, output) {
     upperValue <- vec[pmin(length(vec), intervalNo+1)]
     ifelse(x - lowerValue < upperValue - x, lowerValue, upperValue)
   }
+  
+  
+  # --- Test and validate scenario creation
+  
+
   
   
   # -------------- Reactive expressions to filter data of BASE raster ------------------
@@ -421,6 +380,7 @@ server <- function(input, output) {
   
   # trim selected reference (baseline) scenario
   df_Base <- reactive ({
+    
     rcp <- input$rcp
     gcm <- input$gcm
     crop <- input$crop
@@ -438,18 +398,21 @@ server <- function(input, output) {
           thisScenario == scn
       )
     
+  #  ifelse((nrow(bf) == 0 | is.null(df_Alt()) ), return(), bf)
+    
     return(bf)
-
+    
   })
   
   # trim selected alternative scenario
   df_Alt <- reactive ({
-    rcp <- input$rcp2
-    gcm <- input$gcm2
-    crop2 <- input$crop2
-    cult2 <- input$cult2
-    soil2 <- input$soil2
-    scn2 <- input$scn2
+
+      rcp <- input$rcp2
+      gcm <- input$gcm2
+      crop2 <- input$crop2
+      cult2 <- input$cult2
+      soil2 <- input$soil2
+      scn2 <- input$scn2
     
     bf <- allData %>%
       filter( 
@@ -460,6 +423,8 @@ server <- function(input, output) {
           thisSoil == soil2  &
           thisScenario == scn2
       )
+    
+   # ifelse((nrow(bf) == 0 | is.null(df_Base())), return(), bf)
     
     return(bf)
     
@@ -472,11 +437,6 @@ server <- function(input, output) {
   # baseline scenario
   rasterDF_Base <- reactive({
     
-    validate(
-      need(nrow(df_Base()) != 0, "Scenario not available. Please select another"),
-      need(nrow(df_Alt()) != 0, "Scenario not available. Please select another")
-    )
-    
    r <- df_Base() %>%
       dplyr::select(thisLat,thisLong, varSelection()) %>%
       group_by(thisLat, thisLong) %>%
@@ -488,11 +448,6 @@ server <- function(input, output) {
   
   # alternative scenario
   rasterDF_Alt <- reactive({
-    
-    validate(
-      need(nrow(df_Base()) != 0, "Scenario not available. Please select another"),
-      need(nrow(df_Alt()) != 0, "Scenario not available. Please select another")
-    )
 
       r <- df_Alt() %>%
       dplyr::select(thisLat,thisLong, varSelection()) %>%
@@ -508,11 +463,6 @@ server <- function(input, output) {
   # Create difference dataframe
   
   rasterDF_Diff <- reactive({ 
-    
-    validate(
-      need(nrow(df_Base()) != 0, "Scenario not available. Please select another"),
-      need(nrow(df_Alt()) != 0, "Scenario not available. Please select another")
-    )
     
     # calculate fifference map (as df)
     r1 <- rasterDF_Base()
@@ -541,11 +491,6 @@ server <- function(input, output) {
   # select full (all years) dataset of selected variable (i.e. Y axes, the variable rasterised)
   selectedData_Base <- reactive({
     
-    validate(
-      need(nrow(df_Base()) != 0, "Scenario not available. Please select another"),
-      need(nrow(df_Alt()) != 0, "Scenario not available. Please select another")
-    )
-
     df_Base()[, c(input$xcol, mainVarSelec())] # filter only? FIXME: can yo graph directly from df_BAse?
     
   })
@@ -553,11 +498,6 @@ server <- function(input, output) {
   # select driving variable for graph (X axes)
   selectedData_Alt <- reactive({
     
-    validate(
-      need(nrow(df_Base()) != 0, "Scenario not available. Please select another"),
-      need(nrow(df_Alt()) != 0, "Scenario not available. Please select another")
-    )
-
     df_Alt()[, c(input$xcol, mainVarSelec())]
     
   })
@@ -590,11 +530,6 @@ server <- function(input, output) {
   # baseline
   selectedDataPix_Base <- reactive({
     
-    validate(
-      need(nrow(df_Base()) != 0, "Scenario not available. Please select another"),
-      need(nrow(df_Alt()) != 0, "Scenario not available. Please select another")
-    )
-    
     # values before click # FIXME: not working yet: need to start from selected map
     if(is.null(as.numeric(coordSelectBaseMap3()))) {
       lat <- -37.925
@@ -615,11 +550,6 @@ server <- function(input, output) {
   
   # Alternative
   selectedDataPix_Alt <- reactive({
-    
-    validate(
-      need(nrow(df_Base()) != 0, "Scenario not available. Please select another"),
-      need(nrow(df_Alt()) != 0, "Scenario not available. Please select another")
-    )
     
     # values before click # FIXME: not working yet
     if(is.null(as.numeric(coordSelectBaseMap3()))) {
@@ -652,352 +582,13 @@ server <- function(input, output) {
   })
   
   
-  # GRAPHS 1 -----------------------------------------------------------
-  
-  # create axes limits for all graphs
-  
-  # For the whole dataframe
-  axesLimits <- reactive({
-    xmin <- min(min(selectedData_Base()[1]), min(selectedData_Alt()[1]))
-    xmax <- max(max(selectedData_Base()[1]), max(selectedData_Alt()[1]))
-    ymin <- min(min(selectedData_Base()[2]), min(selectedData_Alt()[2]))
-    ymax <- max(max(selectedData_Base()[2]), max(selectedData_Alt()[2]))
-    x <- data.frame(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax)
-    x
-  })
-  
-  # For the selection of individual pixels
-  axesLimits_Pix <- reactive({
-    xmin <- min(min(selectedDataPix_Base()[1]), min(selectedDataPix_Alt()[1]))
-    xmax <- max(max(selectedDataPix_Base()[1]), max(selectedDataPix_Alt()[1]))
-    ymin <- min(min(selectedDataPix_Base()[2]), min(selectedDataPix_Alt()[2]))
-    ymax <- max(max(selectedDataPix_Base()[2]), max(selectedDataPix_Alt()[2]))
-    x <- data.frame(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax)
-    x
-  })
-  
-  # For the selection of pooled value in rasters
-  axesLimits_Ras <- reactive({
-    xmin <- min(min(rasterDF_Base()[3]), min(rasterDF_Alt()[3]))
-    xmax <- max(max(rasterDF_Base()[3]), max(rasterDF_Alt()[3]))
-    ymin <- min(min(rasterDF_Base()[3]), min(rasterDF_Alt()[3]))
-    ymax <- max(max(rasterDF_Base()[3]), max(rasterDF_Alt()[3]))
-    x <- data.frame(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax)
-    x
-  })
-  
-  
-  # histogram
-  output$plot10 <- renderPlot({
-    
-    # par(mar = c(5.1, 4.1, 2, 1))
-    
-    x    <- as.numeric(unlist(rasterDF_Base()[3]))
-    
-    # thisUnit <- ifelse((compSelection() == "rel"| statSelection() == 4), "%", varUnits())
-    thisUnit <- varUnits()
-    
-    # sort out limits of axes
-    yAxesLims <- c(axesLimits_Ras()$ymin, axesLimits_Ras()$ymax)
-    
-    if(input$graphType == "b") {
-      
-      boxplot(x,
-              main=" ",
-              col = "lightgrey",
-              horizontal=TRUE,
-              ylim= yAxesLims,
-              xlab=paste0(mainVarSelec()," (", thisUnit,")"),
-              pch = 20, cex = 3)
-      points(clusters()$centers, pch = 4, cex = 4, lwd = 4) 
-      
-    } else {
-      
-      bins <- seq(min(x), max(x), length.out = input$bins + 1)
-      
-      hist(x,
-           main=" ",
-           col = "lightgrey",
-           breaks = bins,
-           xlim= yAxesLims,
-           xlab=paste0(mainVarSelec()," (", thisUnit,")"),
-           pch = 20, cex = 3)
-    }
-    
-
-  })
-  
-  
-  # alternative
-  
-  # histogram
-  output$plotxx <- renderPlot({
-    
-    # par(mar = c(5.1, 4.1, 2, 1))
-    
-    x    <- as.numeric(unlist(rasterDF_Alt()[3]))
-    
-    # thisUnit <- ifelse((compSelection() == "rel"| statSelection() == 4), "%", varUnits())
-    thisUnit <- varUnits()
-    
-    # sort out limits of axes
-    yAxesLims <- c(axesLimits_Ras()$ymin, axesLimits_Ras()$ymax)
-    
-    if(input$graphType == "b") {
-      
-      boxplot(x,
-              main=" ",
-              col = "lightgrey",
-              horizontal=TRUE,
-              ylim= yAxesLims,
-              xlab=paste0(mainVarSelec()," (", thisUnit,")"),
-              pch = 20, cex = 3)
-      points(clusters()$centers, pch = 4, cex = 4, lwd = 4) 
-      
-    } else {
-      
-      bins <- seq(min(x), max(x), length.out = input$bins + 1)
-      
-      hist(x,
-           main=" ",
-           col = "lightgrey",
-           breaks = bins,
-           xlim= yAxesLims,
-           xlab=paste0(mainVarSelec()," (", thisUnit,")"),
-           pch = 20, cex = 3)
-    }
-    
-    
-  })
-  
-  
-  # -------------
-  # test ggplot
-  # ------------
-  output$plot11 <- renderPlot({ 
-    
-    if (is.character(selectedData_Base()))
-      return(NULL)
-    
-    df_bas <- selectedData_Base() # FIXME: repeated code: make it single
-    df_bas$scn <- "base"
-    df_alt <- selectedData_Alt()
-    df_alt$scn <- "alt"
-    df_merge <- rbind(df_bas,df_alt)
-    
-    # FIXME: this has to select CV when stat option is ticked
-    df_merge %>%
-      ggplot(aes_string(mainVarSelec()), aes(..count..)) + 
-      geom_density(aes(colour = as.factor(scn),fill = as.factor(scn)), size = 2, alpha = 0.5) +
-      theme(legend.position = c(.1, .9),text = element_text(size=20)) +
-     # scale_colour_brewer(name = "Scenario", ) +
-     # ggtitle(as.character(input$mainvar)) +
-      scale_x_continuous(name=paste0(as.character(input$mainvar)," (",as.character(varUnits()),")"))
-    # theme(legend.position = c(0.1, 0.8), text = element_text(size=20))
-    
-    })
-  
-  # X Y graphic comparison of variables----------
-  
-  # XY scatter graph 
-  output$plot1 <- renderPlot({
-    
-    if (is.character(selectedData_Base()))
-      return(NULL)
-    
-    df_bas <- selectedData_Base() # FIXME: repeated code: make it single
-    df_bas$scn <- "base"
-    df_alt <- selectedData_Alt()
-    df_alt$scn <- "alt"
-    df_merge <- rbind(df_bas,df_alt)
-    
-    df_merge %>%
-      ggplot(aes_string(x=input$xcol, y=mainVarSelec())) + 
-      geom_point(aes(colour = as.factor(scn)), size = 3) +
-      geom_smooth(aes(colour = as.factor(scn)))+
-      theme(legend.position = c(.1, .9),text = element_text(size=20)) 
-    #  scale_x_continuous(name=paste0(as.character(?)," (",as.character(varUnits()),")")) FIXME: need a new var name and unit as render
-    # theme(legend.position = c(0.1, 0.8), text = element_text(size=20))
-    
-  })
-  
-  # alternative graph
-  output$plot2 <- renderPlot({
-    
-    if (is.character(selectedData_Base()))
-      return(NULL)
-    
-    df_bas <- selectedData_Base() # FIXME: repeated code: make it single
-    df_bas$scn <- "base"
-    df_alt <- selectedData_Alt()
-    df_alt$scn <- "alt"
-    df_merge <- rbind(df_bas,df_alt)
-    
-    df_merge %>%
-      ggplot(aes_string(mainVarSelec())) + 
-      geom_density(aes( fill = as.factor(scn), alpha= 0.5, colour = as.factor(scn))) + # , fill = as.factor(scn),  alpha = 0.5
-      theme(legend.position = c(.1, .9),text = element_text(size=20)) +
-    #  ggtitle(as.character(input$mainvar)) +
-     scale_x_continuous(name=paste0(as.character(input$mainvar)," (",as.character(varUnits()),")"))
-    # theme(legend.position = c(0.1, 0.8), text = element_text(size=20))
-    
-  })
-  
  
-  output$plot33 <- renderPlot({
-    
-    if (is.character(selectedData_Base()))
-      return(NULL)
-    
-    df_bas <- selectedData_Base() # FIXME: repeated code: make it single
-    df_bas$scn <- "base"
-    df_alt <- selectedData_Alt()
-    df_alt$scn <- "alt"
-    df_merge <- rbind(df_bas,df_alt)
-    
-    df_merge %>%
-      ggplot(aes_string(input$xcol)) + 
-      geom_density(aes(fill = as.factor(scn), alpha= 0.5, colour = as.factor(scn))) + # order of factors matter
-      theme(legend.position = c(.1, .9),text = element_text(size=20)) # +
-    #  ggtitle(as.character(input$xcol)) 
-    # theme(legend.position = c(0.1, 0.8), text = element_text(size=20))
-    
-  })
   
-  
-  
-  
-  
-  
-  # Distribution graphs (within pixel)-------------
-  
-  # base graph
-  output$plot3 <- renderPlot({
-    
-    par(mar = c(5.1, 4.1, 2, 1))
-    
-    x    <- as.numeric(unlist(selectedDataPix_Base()[2]))
-    
-    # thisUnit <- ifelse((compSelection() == "rel"| statSelection() == 4), "%", varUnits())
-    thisUnit <- varUnits()
-    
-    # sort out limits of axes
-    yAxesLims <- c(axesLimits_Pix()$ymin, axesLimits_Pix()$ymax)
-    
-    if(input$graphType == "b") {
-      
-      boxplot(x,
-              main=" ",
-              col = "lightgrey",
-              horizontal=TRUE,
-              ylim= yAxesLims,
-              xlab=paste0(mainVarSelec()," (", thisUnit,")"),
-              pch = 20, cex = 3)
-      points(clusters()$centers, pch = 4, cex = 4, lwd = 4) 
-      
-    } else {
-      
-      bins <- seq(min(x), max(x), length.out = input$bins + 1)
-      
-      hist(x,
-           main=" ",
-           col = "lightgrey",
-           breaks = bins,
-           xlim= yAxesLims,
-           xlab=paste0(mainVarSelec()," (", thisUnit,")"),
-           pch = 20, cex = 3)
-    }
-    
-    
-  })
-  
-  # alternative graph
-  output$plot4 <- renderPlot({
-    
-    par(mar = c(5.1, 4.1, 2, 1))
-    
-    x    <- as.numeric(unlist(selectedDataPix_Alt()[2]))
-    
-    # thisUnit <- ifelse((compSelection() == "rel"| statSelection() == 4), "%", varUnits()) # FIXME: remove code duplication
-    thisUnit <- varUnits()
-    
-    if(input$graphType == "b") {
-      
-      boxplot(x,
-              main= " ",
-              col = "lightgrey",
-              horizontal=TRUE,
-              ylim=c(axesLimits_Pix()$ymin, axesLimits_Pix()$ymax),
-              xlab=paste0(mainVarSelec()," (", thisUnit,")"),
-              pch = 20, cex = 3)
-      points(clusters()$centers, pch = 4, cex = 4, lwd = 4) 
-      
-    } else {
-      
-      bins <- seq(min(x), max(x), length.out = input$bins + 1)
-      
-      hist(x,
-           main=" ",
-           col = "lightgrey",
-           breaks = bins,
-           xlim=c(axesLimits_Pix()$ymin, axesLimits_Pix()$ymax),
-           xlab=paste0(mainVarSelec()," (", thisUnit,")"),
-           pch = 20, cex = 3)
-    }
-    
-    
-  })
-  
-  # Differences within a gridcell
-  output$plot5 <- renderPlot({
-    
-    par(mar = c(5.1, 4.1, 2, 1))
-    
-    bas <-   data.frame(thisVar = as.numeric(unlist(selectedDataPix_Base()[2])))
-    alt <-   data.frame(thisVar = as.numeric(unlist(selectedDataPix_Alt()[2])))
-    
-    diff_abs <- alt - bas
-    diff_rel <- (alt-mean(bas$thisVar))/mean(bas$thisVar)*100 # (alt-bas)/bas*100 
-    
-    # FIXME: Not cohercing to a vector
-    x  <- ifelse(compSelection() == "abs", diff_abs, diff_rel)
-    
-    thisUnit <- ifelse((compSelection() == "rel"| statSelection() == 4), "%", varUnits()) # FIXME: remove code duplication
-    
-    if(input$graphType == "b") {
-      
-      boxplot(x,
-              main= " ",
-              col = "lightgrey",
-              horizontal=TRUE,
-              #      ylim=c(min(min(bas,alt)), max(max(bas,alt))),
-              xlab=paste0("Difference in ", mainVarSelec()," (", thisUnit,")"),
-              pch = 20, cex = 3)
-      points(clusters()$centers, pch = 4, cex = 4, lwd = 4) 
-      
-    } else {
-      
-      x <- as.numeric(unlist(x))
-      
-      bins <- seq(min(x), max(x), length.out = input$bins + 1)
-      
-      # FIXME: invalid 'type' (list) of argument
-      hist(x,
-           main=" ",
-           col = "lightgrey",
-           breaks = bins,
-           #   xlim=c(axesLimits_Pix()$ymin, axesLimits_Pix()$ymax),
-           xlab=paste0("Difference in ",mainVarSelec()," (", thisUnit,")"),
-           pch = 20, cex = 3)
-    }
-    
-    
-  })
-  
-  
-  # RASTERISE DFs ------------------------------------------ FIXME: Not fully working yet
-  
+ ##############################################################
+ # --------- RASTERISE DFs ------------------------------------------ FIXME: Not fully working yet
+ ################################################################ 
   # FIXME: Can u set up a rasterMyDf function to avoid this code duplication?
+  
   rasterMyDf <- function(x) {
     reactive ({
       df <- x
@@ -1285,7 +876,127 @@ server <- function(input, output) {
     
   }) 
   
-  # DOWNLOAD  ----------------------------- FIXME: file content is not as expected
+  
+  #############################################################
+  # ---- Graphs
+  #############################################################
+  
+  # diff of rasters
+  output$plot11 <- renderPlot({ 
+    
+    if (is.character(selectedData_Base()))
+      return(NULL)
+    
+    df_bas <- selectedData_Base() # FIXME: repeated code: make it single
+    df_bas$scn <- "base"
+    df_alt <- selectedData_Alt()
+    df_alt$scn <- "alt"
+    df_merge <- rbind(df_bas,df_alt)
+    
+    # FIXME: this has to select CV when stat option is ticked
+    df_merge %>%
+      ggplot(aes_string(mainVarSelec()), aes(..count..)) + 
+      geom_density(aes(colour = as.factor(scn),fill = as.factor(scn)), size = 2, alpha = 0.5) +
+      theme(legend.position = c(.1, .9),text = element_text(size=20)) +
+      # scale_colour_brewer(name = "Scenario", ) +
+      # ggtitle(as.character(input$mainvar)) +
+      scale_x_continuous(name=paste0(as.character(input$mainvar)," (",as.character(varUnits()),")"))
+    # theme(legend.position = c(0.1, 0.8), text = element_text(size=20))
+    
+  })
+  
+  
+  # within selected single pixel data
+  output$plot3 <- renderPlot({
+    
+    if (is.character(selectedData_Base()))
+      return(NULL)
+    
+    df_bas <- selectedData_Base() # FIXME: repeated code: make it single
+    df_bas$scn <- "base"
+    df_alt <- selectedData_Alt()
+    df_alt$scn <- "alt"
+    df_merge <- rbind(df_bas,df_alt)
+    
+    df_merge %>%
+      ggplot(aes_string(x=input$xcol, y=mainVarSelec())) + 
+      geom_point(aes(colour = as.factor(scn)), size = 3) +
+      geom_smooth(aes(colour = as.factor(scn)))+
+      theme(legend.position = c(.1, .9),text = element_text(size=20)) 
+    #  scale_x_continuous(name=paste0(as.character(?)," (",as.character(varUnits()),")")) FIXME: need a new var name and unit as render
+    # theme(legend.position = c(0.1, 0.8), text = element_text(size=20))
+    
+  })
+  
+  # X and Y comparoison of factors
+  output$plot1 <- renderPlot({
+    
+    if (is.character(selectedData_Base()))
+      return(NULL)
+    
+    df_bas <- selectedData_Base() # FIXME: repeated code: make it single
+    df_bas$scn <- "base"
+    df_alt <- selectedData_Alt()
+    df_alt$scn <- "alt"
+    df_merge <- rbind(df_bas,df_alt)
+    
+    df_merge %>%
+      ggplot(aes_string(x=input$xcol, y=mainVarSelec())) + 
+      geom_point(aes(colour = as.factor(scn)), size = 3) +
+      geom_smooth(aes(colour = as.factor(scn)))+
+      theme(legend.position = c(.1, .9),text = element_text(size=20)) 
+    #  scale_x_continuous(name=paste0(as.character(?)," (",as.character(varUnits()),")")) FIXME: need a new var name and unit as render
+    # theme(legend.position = c(0.1, 0.8), text = element_text(size=20))
+    
+  })
+  
+  # distribution of x-axes variable
+  output$plot2 <- renderPlot({
+    
+    if (is.character(selectedData_Base()))
+      return(NULL)
+    
+    df_bas <- selectedData_Base() # FIXME: repeated code: make it single
+    df_bas$scn <- "base"
+    df_alt <- selectedData_Alt()
+    df_alt$scn <- "alt"
+    df_merge <- rbind(df_bas,df_alt)
+    
+    df_merge %>%
+      ggplot(aes_string(mainVarSelec())) + 
+      geom_density(aes( fill = as.factor(scn), alpha= 0.5, colour = as.factor(scn))) + # , fill = as.factor(scn),  alpha = 0.5
+      theme(legend.position = c(.1, .9),text = element_text(size=20)) +
+      #  ggtitle(as.character(input$mainvar)) +
+      scale_x_continuous(name=paste0(as.character(input$mainvar)," (",as.character(varUnits()),")"))
+    # theme(legend.position = c(0.1, 0.8), text = element_text(size=20))
+    
+  })
+  
+  # distribution of y-axes values
+  output$plot33 <- renderPlot({
+    
+    if (is.character(selectedData_Base()))
+      return(NULL)
+    
+    df_bas <- selectedData_Base() # FIXME: repeated code: make it single
+    df_bas$scn <- "base"
+    df_alt <- selectedData_Alt()
+    df_alt$scn <- "alt"
+    df_merge <- rbind(df_bas,df_alt)
+    
+    df_merge %>%
+      ggplot(aes_string(input$xcol)) + 
+      geom_density(aes(fill = as.factor(scn), alpha= 0.5, colour = as.factor(scn))) + # order of factors matter
+      theme(legend.position = c(.1, .9),text = element_text(size=20)) # +
+    #  ggtitle(as.character(input$xcol)) 
+    # theme(legend.position = c(0.1, 0.8), text = element_text(size=20))
+    
+  })
+  
+ 
+  ######################################################
+  # --------- DOWNLOAD  ----------------------------- FIXME: need file naming
+  ######################################################
   
   # select the output type (FIXME: why not do all in same txt file or zipped 3 raster for GeoTiff?)
   datasetInput <- reactive({
