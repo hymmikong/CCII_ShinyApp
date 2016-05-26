@@ -76,7 +76,7 @@ ui <- fluidPage(
                textOutput("text1"),
                
                tags$hr(),
-               h4(tags$b("Construct contrating scenarios:")),
+               h4(tags$b("Construct scenarios:")),
                fluidRow(
                  column(5,
                         h4(tags$b("Refence")),
@@ -143,28 +143,22 @@ ui <- fluidPage(
       
       # tab - Spatial analysis
       tabPanel("Regional analysis",
-               
-               # input stats
-   #            tags$hr(),
-           #    h4(tags$b("Calculation details")),
-   #            radioButtons("stats", "Choose statistics:",
-   #                         inline = TRUE,
-   #                         c("Average" = "av","Variability (CV%)" = "cv")),
-   
+
            # map controls
            fluidRow(
              column(4,
                     p(),
                     radioButtons("stats", "Choose statistics:",
-                                 inline = TRUE,
-                                 c("Average" = "av","Variability (CV%)" = "cv"))
+                               #  inline = TRUE,
+                                 c("Average" = "av",
+                                   "Inter-annual variability (CV%)" = "cv"))
                     
                    ),
              column(4,
                     p(),
                     # select diff method
                     radioButtons("comp", "Comparison method",
-                                 inline = TRUE,
+                             #    inline = TRUE,
                                  c("Absolute" = "abs","Relative (%)" = "rel"))
                     
              ),
@@ -229,11 +223,6 @@ ui <- fluidPage(
                p(),
                #     h4(tags$b("Alternative scenario")),
                p(),
-               #     plotOutput("plot4"),
-               #   p(),
-               #   h4(tags$b("Difference for alternative scenarios")),
-               #    p(),
-               #    plotOutput("plot5")
                p()
       ),
       
@@ -307,11 +296,6 @@ server <- function(input, output) {
     upperValue <- vec[pmin(length(vec), intervalNo+1)]
     ifelse(x - lowerValue < upperValue - x, lowerValue, upperValue)
   }
-  
-  
-  # --- Test and validate scenario creation
-  
-
   
   
   # -------------- Reactive expressions to filter data of BASE raster ------------------
@@ -431,7 +415,6 @@ server <- function(input, output) {
   })
   
   
-  
   # Raster dataframe (summarised by pixel with average or CV%) --------------
   
   # baseline scenario
@@ -506,9 +489,9 @@ server <- function(input, output) {
   # Pixel Data for graphing (filtered by lat-long) -----------
   
   # select lat / long approximate coordinates by click
-  coordSelectBaseMap3 <- reactive({
-    lat <-  as.numeric(as.character(input$basemap3_click$lat))
-    lng <-  as.numeric(as.character(input$basemap3_click$lng))
+  coordSelectBaseMap4 <- reactive({
+    lat <-  as.numeric(as.character(input$basemap4_click$lat))
+    lng <-  as.numeric(as.character(input$basemap4_click$lng))
     
     lat.vec <- sort(as.numeric(unique(allData$thisLat)))
     lng.vec <- sort(as.numeric(unique(allData$thisLong)))
@@ -531,12 +514,12 @@ server <- function(input, output) {
   selectedDataPix_Base <- reactive({
     
     # values before click # FIXME: not working yet: need to start from selected map
-    if(is.null(as.numeric(coordSelectBaseMap3()))) {
+    if(is.null(as.numeric(coordSelectBaseMap4()))) {
       lat <- -37.925
       lng <- 176.275
     } else {
-      lat <- coordSelectBaseMap3()[1]
-      lng <- coordSelectBaseMap3()[2]
+      lat <- coordSelectBaseMap4()[1]
+      lng <- coordSelectBaseMap4()[2]
     }
     
     # trim to selected coordinates FIXME: Untested
@@ -552,12 +535,12 @@ server <- function(input, output) {
   selectedDataPix_Alt <- reactive({
     
     # values before click # FIXME: not working yet
-    if(is.null(as.numeric(coordSelectBaseMap3()))) {
+    if(is.null(as.numeric(coordSelectBaseMap4()))) {
       lat <- -37.925
       lng <- 176.275
     } else {
-      lat <- coordSelectBaseMap3()[1]
-      lng <- coordSelectBaseMap3()[2]
+      lat <- coordSelectBaseMap4()[1]
+      lng <- coordSelectBaseMap4()[2]
     }
 
     # trim to selected coordinates FIXME: Untested
@@ -581,11 +564,8 @@ server <- function(input, output) {
     kmeans(selectedData_Alt(), input$clusters)
   })
   
-  
- 
-  
  ##############################################################
- # --------- RASTERISE DFs ------------------------------------------ FIXME: Not fully working yet
+ # --------- RASTERISE DFs -------------------FIXME: Not fully working yet
  ################################################################ 
   # FIXME: Can u set up a rasterMyDf function to avoid this code duplication?
   
@@ -736,23 +716,26 @@ server <- function(input, output) {
   
   # add raster to base 4 (FIXME: temporary test)
   observe({
+    #  pal <- colorNumeric(c("#ffffe5", "#fff7bc", "#fee391","#fec44f","#fe9929","#ec7014","#cc4c02","#8c2d04"), 
+    #                      values(diff_rasterLayer()), na.color = "transparent")
+    
     pal <- colorNumeric(c("#8B0000","#EE4000", "#FFA500","#008B45"), 
-                        values(base_rasterLayer()), na.color = "transparent")
+                        values(diff_rasterLayer()), na.color = "transparent")
     
     lng <- ifelse(is.null(input$basemap4_click$lng), 178,input$basemap4_click$lng)
     lat <- ifelse(is.null(input$basemap4_click$lat), -38,input$basemap4_click$lat)
     
-    valRasters <- c(rasterDF_Base()$thisVar, rasterDF_Alt()$thisVar)
     
-    leafletProxy("basemap4", data = c(base_rasterLayer(), sl())) %>%
+    thisTitle <- ifelse((compSelection() == "rel"| statSelection() == 4), "(%)", varUnits()) # FIXME: the use of int for statSel is not intuitive
+    
+    leafletProxy("basemap4", data = c(diff_rasterLayer(), sl())) %>%
       clearGroup(group="Rasters") %>%
-      clearMarkers() %>%
       clearControls() %>% # necessary to remove old legend
-      addRasterImage(base_rasterLayer(),colors = pal, opacity = sl(), group = "Rasters") %>%
+      clearMarkers() %>%
+      addRasterImage(diff_rasterLayer(),colors = pal, opacity = sl(), group = "Rasters") %>%
       addMarkers(lng,lat) %>%
-      #  addLegend(pal = pal, values = values(base_rasterLayer()),
-      addLegend(pal = pal, values = valRasters, 
-                title = varUnits()) # FIXME: Use % or CV% if relative selected
+      addLegend(pal = pal, values = values(diff_rasterLayer()), 
+                title = thisTitle) # FIXME: Use % or CV% if relative selected
   })
   
   # add polygon custom function
@@ -768,43 +751,6 @@ server <- function(input, output) {
   # addMyPolygon("basemap2",sf2)
   # addMyPolygon("basemap3",sf2)
   # addMyPolygon("basemap4",sf2)
-  
-  
-  # GRAPHS ---------------------------------------------------------------------
-  
-  
-  # Graph diff distrubution of raster DF (across grid cells)
-  output$plot7 <- renderPlot({
-    
-    par(mar = c(5.1, 4.1, 2, 1))
-    
-    thisUnit <- ifelse((compSelection() == "rel"| statSelection() == 4), "%", varUnits()) # FIXME: remove code duplication
-    
-    df <- rasterDF_Diff()
-    x    <- df[, "thisVar"]
-    
-    if(input$graphType == "b") {
-      
-      boxplot(as.numeric(unlist(x)),
-              main=" ",
-              horizontal=TRUE,
-              col = "lightgrey",
-              xlab=paste0(mainVarSelec()," (", thisUnit,")"),
-              pch = 20, cex = 3)
-      
-    } else {
-      
-      bins <- seq(min(x), max(x), length.out = input$bins + 1)
-      
-      hist(as.numeric(unlist(x)),
-           main=" ",
-           col = "lightgrey",
-           breaks = bins,
-           xlab=paste0(mainVarSelec()," (", thisUnit,")"),
-           pch = 20, cex = 3)
-    }
-    
-  })
   
   #########################
   # Tables for testing
@@ -899,9 +845,10 @@ server <- function(input, output) {
     df_merge %>%
       ggplot(aes_string(mainVarSelec()), aes(..count..)) + 
       geom_density(aes(colour = as.factor(scn),fill = as.factor(scn)), size = 2, alpha = 0.5) +
-      theme(legend.position = c(.1, .9),text = element_text(size=20)) +
+      theme(legend.position = c(.2, .8),text = element_text(size=20)) +
       # scale_colour_brewer(name = "Scenario", ) +
       # ggtitle(as.character(input$mainvar)) +
+   #   guides(fill = guide_legend(keywidth = 2, keyheight = 2)) +
       scale_x_continuous(name=paste0(as.character(input$mainvar)," (",as.character(varUnits()),")"))
     # theme(legend.position = c(0.1, 0.8), text = element_text(size=20))
     
@@ -911,12 +858,12 @@ server <- function(input, output) {
   # within selected single pixel data
   output$plot3 <- renderPlot({ 
     
-    if (is.character(selectedData_Base()))
+    if (is.character(selectedDataPix_Base()))
       return(NULL)
     
-    df_bas <- selectedData_Base() # FIXME: repeated code: make it single
+    df_bas <- selectedDataPix_Base() # FIXME: repeated code: make it single
     df_bas$scn <- "base"
-    df_alt <- selectedData_Alt()
+    df_alt <- selectedDataPix_Alt()
     df_alt$scn <- "alt"
     df_merge <- rbind(df_bas,df_alt)
     
@@ -924,13 +871,14 @@ server <- function(input, output) {
     df_merge %>%
       ggplot(aes_string(mainVarSelec()), aes(..count..)) + 
       geom_density(aes(colour = as.factor(scn),fill = as.factor(scn)), size = 2, alpha = 0.5) +
-      theme(legend.position = c(.1, .9),text = element_text(size=20)) +
+      theme(legend.position = c(.2, .8),text = element_text(size=20)) +
       # scale_colour_brewer(name = "Scenario", ) +
       # ggtitle(as.character(input$mainvar)) +
       scale_x_continuous(name=paste0(as.character(input$mainvar)," (",as.character(varUnits()),")"))
     # theme(legend.position = c(0.1, 0.8), text = element_text(size=20))
     
   })
+
   
   # X and Y comparoison of factors
   output$plot1 <- renderPlot({
@@ -948,7 +896,7 @@ server <- function(input, output) {
       ggplot(aes_string(x=input$xcol, y=mainVarSelec())) + 
       geom_point(aes(colour = as.factor(scn)), size = 3) +
       geom_smooth(aes(colour = as.factor(scn)))+
-      theme(legend.position = c(.1, .9),text = element_text(size=20)) 
+      theme(legend.position = c(.2, .8),text = element_text(size=20)) 
     #  scale_x_continuous(name=paste0(as.character(?)," (",as.character(varUnits()),")")) FIXME: need a new var name and unit as render
     # theme(legend.position = c(0.1, 0.8), text = element_text(size=20))
     
@@ -969,7 +917,7 @@ server <- function(input, output) {
     df_merge %>%
       ggplot(aes_string(mainVarSelec())) + 
       geom_density(aes( fill = as.factor(scn), alpha= 0.5, colour = as.factor(scn))) + # , fill = as.factor(scn),  alpha = 0.5
-      theme(legend.position = c(.1, .9),text = element_text(size=20)) +
+      theme(legend.position = c(.2, .8),text = element_text(size=20)) +
       #  ggtitle(as.character(input$mainvar)) +
       scale_x_continuous(name=paste0(as.character(input$mainvar)," (",as.character(varUnits()),")"))
     # theme(legend.position = c(0.1, 0.8), text = element_text(size=20))
@@ -991,7 +939,7 @@ server <- function(input, output) {
     df_merge %>%
       ggplot(aes_string(input$xcol)) + 
       geom_density(aes(fill = as.factor(scn), alpha= 0.5, colour = as.factor(scn))) + # order of factors matter
-      theme(legend.position = c(.1, .9),text = element_text(size=20)) # +
+      theme(legend.position = c(.2, .8),text = element_text(size=20)) # +
     #  ggtitle(as.character(input$xcol)) 
     # theme(legend.position = c(0.1, 0.8), text = element_text(size=20))
     
