@@ -472,6 +472,11 @@ server <- function(input, output) {
   # baseline scenario
   rasterDF_Base <- reactive({
     
+    validate(
+      need(nrow(df_Base()) != 0, "Scenario not available. Please select another"),
+      need(nrow(df_Alt()) != 0, "Scenario not available. Please select another")
+    )
+    
    r <- df_Base() %>%
       dplyr::select(thisLat,thisLong, varSelection()) %>%
       group_by(thisLat, thisLong) %>%
@@ -483,6 +488,11 @@ server <- function(input, output) {
   
   # alternative scenario
   rasterDF_Alt <- reactive({
+    
+    validate(
+      need(nrow(df_Base()) != 0, "Scenario not available. Please select another"),
+      need(nrow(df_Alt()) != 0, "Scenario not available. Please select another")
+    )
 
       r <- df_Alt() %>%
       dplyr::select(thisLat,thisLong, varSelection()) %>%
@@ -498,6 +508,11 @@ server <- function(input, output) {
   # Create difference dataframe
   
   rasterDF_Diff <- reactive({ 
+    
+    validate(
+      need(nrow(df_Base()) != 0, "Scenario not available. Please select another"),
+      need(nrow(df_Alt()) != 0, "Scenario not available. Please select another")
+    )
     
     # calculate fifference map (as df)
     r1 <- rasterDF_Base()
@@ -525,6 +540,11 @@ server <- function(input, output) {
   
   # select full (all years) dataset of selected variable (i.e. Y axes, the variable rasterised)
   selectedData_Base <- reactive({
+    
+    validate(
+      need(nrow(df_Base()) != 0, "Scenario not available. Please select another"),
+      need(nrow(df_Alt()) != 0, "Scenario not available. Please select another")
+    )
 
     df_Base()[, c(input$xcol, mainVarSelec())] # filter only? FIXME: can yo graph directly from df_BAse?
     
@@ -532,6 +552,11 @@ server <- function(input, output) {
   
   # select driving variable for graph (X axes)
   selectedData_Alt <- reactive({
+    
+    validate(
+      need(nrow(df_Base()) != 0, "Scenario not available. Please select another"),
+      need(nrow(df_Alt()) != 0, "Scenario not available. Please select another")
+    )
 
     df_Alt()[, c(input$xcol, mainVarSelec())]
     
@@ -565,6 +590,11 @@ server <- function(input, output) {
   # baseline
   selectedDataPix_Base <- reactive({
     
+    validate(
+      need(nrow(df_Base()) != 0, "Scenario not available. Please select another"),
+      need(nrow(df_Alt()) != 0, "Scenario not available. Please select another")
+    )
+    
     # values before click # FIXME: not working yet: need to start from selected map
     if(is.null(as.numeric(coordSelectBaseMap3()))) {
       lat <- -37.925
@@ -585,6 +615,11 @@ server <- function(input, output) {
   
   # Alternative
   selectedDataPix_Alt <- reactive({
+    
+    validate(
+      need(nrow(df_Base()) != 0, "Scenario not available. Please select another"),
+      need(nrow(df_Alt()) != 0, "Scenario not available. Please select another")
+    )
     
     # values before click # FIXME: not working yet
     if(is.null(as.numeric(coordSelectBaseMap3()))) {
