@@ -806,7 +806,9 @@ server <- function(input, output) {
     
   })
   
+  #########################
   # Tables for testing
+  #########################
   
   # Table raster1
   output$table1 <- renderTable({
@@ -878,7 +880,7 @@ server <- function(input, output) {
   
   
   #############################################################
-  # ---- Graphs
+  # ---- Graphs ----------------------------
   #############################################################
   
   # diff of rasters
@@ -907,7 +909,7 @@ server <- function(input, output) {
   
   
   # within selected single pixel data
-  output$plot3 <- renderPlot({
+  output$plot3 <- renderPlot({ 
     
     if (is.character(selectedData_Base()))
       return(NULL)
@@ -918,12 +920,14 @@ server <- function(input, output) {
     df_alt$scn <- "alt"
     df_merge <- rbind(df_bas,df_alt)
     
+    # FIXME: this has to select CV when stat option is ticked
     df_merge %>%
-      ggplot(aes_string(x=input$xcol, y=mainVarSelec())) + 
-      geom_point(aes(colour = as.factor(scn)), size = 3) +
-      geom_smooth(aes(colour = as.factor(scn)))+
-      theme(legend.position = c(.1, .9),text = element_text(size=20)) 
-    #  scale_x_continuous(name=paste0(as.character(?)," (",as.character(varUnits()),")")) FIXME: need a new var name and unit as render
+      ggplot(aes_string(mainVarSelec()), aes(..count..)) + 
+      geom_density(aes(colour = as.factor(scn),fill = as.factor(scn)), size = 2, alpha = 0.5) +
+      theme(legend.position = c(.1, .9),text = element_text(size=20)) +
+      # scale_colour_brewer(name = "Scenario", ) +
+      # ggtitle(as.character(input$mainvar)) +
+      scale_x_continuous(name=paste0(as.character(input$mainvar)," (",as.character(varUnits()),")"))
     # theme(legend.position = c(0.1, 0.8), text = element_text(size=20))
     
   })
