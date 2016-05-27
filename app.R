@@ -19,6 +19,12 @@ library(gplots)
 library(htmltools)
 #install.packages('raster', repos = 'http://r-forge.r-project.org/', type = 'source') # using new raster lib
 
+# for debbuging
+DEBUG <- F
+if(DEBUG == T){
+  input <- list()
+}
+
 # load raw data
 allData <- read.csv("C:\\GitHubRepos\\CCII_ShinyApp\\data\\AllData(RA2).csv", header = TRUE)
 
@@ -311,8 +317,8 @@ server <- function(input, output) {
   f5 <-  ifelse(input$cult == input$cult2,"=", "Diff")
   f6 <-  ifelse(input$soil == input$soil2,"=", "Diff")
     
- # as.character(paste0("Scenarios differ by: ", f1," ", f2, " ", f3, " ",f4," ", f5," ", f6))
   f <- c(f1, f2, f3, f4, f5, f6)  
+  
   return(f)
   
   })
@@ -382,8 +388,6 @@ server <- function(input, output) {
           thisScenario == scn
       )
     
-  #  ifelse((nrow(bf) == 0 | is.null(df_Alt()) ), return(), bf)
-    
     return(bf)
     
   })
@@ -408,8 +412,6 @@ server <- function(input, output) {
           thisScenario == scn2
       )
     
-   # ifelse((nrow(bf) == 0 | is.null(df_Base())), return(), bf)
-    
     return(bf)
     
   })
@@ -419,26 +421,27 @@ server <- function(input, output) {
   
   # baseline scenario
   rasterDF_Base <- reactive({
-    
+      
    r <- df_Base() %>%
       dplyr::select(thisLat,thisLong, varSelection()) %>%
       group_by(thisLat, thisLong) %>%
       summarise_each(funs(mean,cvFunc)) %>%
       dplyr::select(thisLat, thisLong, thisVar = statSelection())
-    r
+   
+    return(r)
     
   })
   
   # alternative scenario
   rasterDF_Alt <- reactive({
-
+    
       r <- df_Alt() %>%
       dplyr::select(thisLat,thisLong, varSelection()) %>%
       group_by(thisLat, thisLong) %>%
       summarise_each(funs(mean,cvFunc)) %>%
       dplyr::select(thisLat, thisLong, thisVar = statSelection())
       
-    r
+    return(r)
     
   })
   
@@ -464,7 +467,7 @@ server <- function(input, output) {
     df_diff <- df_diff %>%
       dplyr::select(thisLat,thisLong, thisVar)
     
-    df_diff
+    return(df_diff)
     
   })
   
@@ -474,14 +477,18 @@ server <- function(input, output) {
   # select full (all years) dataset of selected variable (i.e. Y axes, the variable rasterised)
   selectedData_Base <- reactive({
     
-    df_Base()[, c(input$xcol, mainVarSelec())] # filter only? FIXME: can yo graph directly from df_BAse?
-    
+  bf <- df_Base()[, c(input$xcol, mainVarSelec())] # filter only? FIXME: can yo graph directly from df_BAse?
+  
+  return(bf)
+
   })
   
   # select driving variable for graph (X axes)
   selectedData_Alt <- reactive({
     
-    df_Alt()[, c(input$xcol, mainVarSelec())]
+    bf <- df_Alt()[, c(input$xcol, mainVarSelec())]
+    
+    return(bf)
     
   })
   
@@ -588,6 +595,7 @@ server <- function(input, output) {
   
   
   base_rasterLayer <- reactive ({
+    
     df <- rasterDF_Base()
     spg <- data.frame(df$thisLong, df$thisLat, df$thisVar)
     coordinates(spg) <- ~ df.thisLong + df.thisLat # Attention to variable names
@@ -619,8 +627,9 @@ server <- function(input, output) {
     r
   })
   
-  
-  # MAPPING ---------------------------------------------------
+  ################################
+  # MAPPING ----------------------
+  ################################
   
   content <- paste(sep = "<br/>",
                    "<b><a href='https://www.boprc.govt.nz/environment/rivers-and-drainage/kaituna-catchment-control-scheme/'>Kaituna catchment</a></b>",
@@ -832,6 +841,11 @@ server <- function(input, output) {
   # diff of rasters
   output$plot11 <- renderPlot({ 
     
+    if(nrow(selectedData_Base()) == 0 |
+       nrow(selectedData_Alt()) == 0
+       )  {return(NULL) }
+    
+    
     if (is.character(selectedData_Base()))
       return(NULL)
     
@@ -998,7 +1012,6 @@ server <- function(input, output) {
         
         # Rename it to the correct filename
         file.rename(res@file@name, file)
-        
         
       }
       
