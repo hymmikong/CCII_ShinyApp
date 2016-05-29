@@ -388,6 +388,8 @@ server <- function(input, output) {
           thisScenario == scn
       )
     
+    validate(need(nrow(bf)>0,'Empty dataframe'))
+    
     return(bf)
     
   })
@@ -411,6 +413,8 @@ server <- function(input, output) {
           thisSoil == soil2  &
           thisScenario == scn2
       )
+    
+    validate(need(nrow(bf)>0,'Empty dataframe'))
     
     return(bf)
     
@@ -441,6 +445,8 @@ server <- function(input, output) {
       summarise_each(funs(mean,cvFunc)) %>%
       dplyr::select(thisLat, thisLong, thisVar = statSelection())
       
+      validate(need(nrow(r)>0,'Empty dataframe'))
+      
     return(r)
     
   })
@@ -467,6 +473,8 @@ server <- function(input, output) {
     df_diff <- df_diff %>%
       dplyr::select(thisLat,thisLong, thisVar)
     
+    validate(need(nrow(df_diff)>0,'Empty dataframe'))
+    
     return(df_diff)
     
   })
@@ -479,6 +487,8 @@ server <- function(input, output) {
     
   bf <- df_Base()[, c(input$xcol, mainVarSelec())] # filter only? FIXME: can yo graph directly from df_BAse?
   
+  validate(need(nrow(bf)>0,'Empty dataframe'))
+  
   return(bf)
 
   })
@@ -487,6 +497,8 @@ server <- function(input, output) {
   selectedData_Alt <- reactive({
     
     bf <- df_Alt()[, c(input$xcol, mainVarSelec())]
+    
+    validate(need(nrow(bf)>0,'Empty dataframe'))
     
     return(bf)
     
@@ -533,8 +545,11 @@ server <- function(input, output) {
     bf <- df_Base() %>%
       filter(thisLat == lat &
              thisLong == lng)
+    
+    validate(need(nrow(bf)>0,'Empty dataframe'))
 
     bf[, c(input$xcol, mainVarSelec())]
+    
 
   })
   
@@ -555,7 +570,10 @@ server <- function(input, output) {
       filter(thisLat == lat &
              thisLong == lng)
     
+    validate(need(nrow(bf)>0,'Empty dataframe'))
+    
     bf[, c(input$xcol, mainVarSelec())]
+    
 
   })
   
@@ -602,6 +620,7 @@ server <- function(input, output) {
     gridded(spg) <- TRUE
     r <- raster(spg)
     proj4string(r) <- "+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"
+    
     r
   })
   
@@ -843,7 +862,7 @@ server <- function(input, output) {
     
     if(nrow(selectedData_Base()) == 0 |
        nrow(selectedData_Alt()) == 0
-       )  {return(NULL) }
+    )  {return(NULL) }
     
     
     if (is.character(selectedData_Base()))
@@ -862,9 +881,10 @@ server <- function(input, output) {
       theme(legend.position = c(.2, .8),text = element_text(size=20)) +
       # scale_colour_brewer(name = "Scenario", ) +
       # ggtitle(as.character(input$mainvar)) +
-   #   guides(fill = guide_legend(keywidth = 2, keyheight = 2)) +
+      #   guides(fill = guide_legend(keywidth = 2, keyheight = 2)) +
       scale_x_continuous(name=paste0(as.character(input$mainvar)," (",as.character(varUnits()),")"))
     # theme(legend.position = c(0.1, 0.8), text = element_text(size=20))
+
     
   })
   
