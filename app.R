@@ -54,8 +54,8 @@ numVarNames <- as.character(numVars_df$fullName)
 
 # Customise data (FIXME: this should be done earlier in raw dataset)
 allData <- allData %>%
-  mutate(Lat_Long = paste0(thisLat,"_",thisLong), 
-         FUE = TotalBiomass/PTfert)
+ subset(thisGCM != "ERA") %>%
+  mutate(Lat_Long = paste0(thisLat,"_",thisLong))
 
 
 # Load polygon maps for 'Kaituna' catchment
@@ -87,7 +87,7 @@ ui <- fluidPage(
                  column(5,
                         h4(tags$b("Refence")),
                         selectInput('gcm', 'GCM #1', as.character(unique(allData$thisGCM)),selected = as.character(unique(allData$thisGCM))[[2]]),
-                        selectInput('rcp', 'Climate #1', as.character(unique(allData$thisRCP)),selected = as.character(unique(allData$thisRCP))[[2]]),
+                        selectInput('rcp', 'Climate #1', as.character(unique(allData$thisRCP)),selected = as.character(unique(allData$thisRCP))[[1]]),
                         selectInput('scn', 'Time #1', as.character(unique(allData$thisScenario)),selected = as.character(unique(allData$thisScenario))[[1]]),
                         selectInput('crop', 'Crop #1', as.character(unique(allData$thisCrop))),
                         selectInput('cult', 'Cultivar #1', as.character(unique(allData$thisCultivar))),
@@ -97,7 +97,7 @@ ui <- fluidPage(
                  column(5,
                         h4(tags$b("Alternative")),
                         selectInput('gcm2','GCM #2', as.character(unique(allData$thisGCM)),selected = as.character(unique(allData$thisGCM))[[2]]),
-                        selectInput('rcp2', 'Climate #2', as.character(unique(allData$thisRCP)),selected = as.character(unique(allData$thisRCP))[[2]]),
+                        selectInput('rcp2', 'Climate #2', as.character(unique(allData$thisRCP)),selected = as.character(unique(allData$thisRCP))[[1]]),
                         selectInput('scn2', 'Time #2', as.character(unique(allData$thisScenario)),selected = as.character(unique(allData$thisScenario))[[1]]),
                         selectInput('crop2', 'Crop #2', as.character(unique(allData$thisCrop))),
                         selectInput('cult2', 'Cultivar #2', as.character(unique(allData$thisCultivar))),
