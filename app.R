@@ -5,6 +5,7 @@
 
 # load libraries (FIXME: delete the ones not used anymore)
 library(shiny)
+library(shinyFiles)
 library(dplyr)
 library(ggplot2)
 library(leaflet)
@@ -25,11 +26,17 @@ if(DEBUG == T){
   input <- list()
 }
 
-# load raw data
-allData <- read.csv("C:\\GitHubRepos\\CCII_ShinyApp\\data\\AllData(RA2).csv", header = TRUE)
+# select directory with raw data
+rootDir <- "C:\\GitHubRepos\\CCII_ShinyApp\\data\\"
 
-# Select variables of interest based on listed outputs
-varList <- read.csv("C:\\GitHubRepos\\CCII_ShinyApp\\data\\variableNames_v3.csv", header = TRUE)
+# select root directory (where all data will sit)
+allData <- read.csv(paste0(rootDir, "AllData(RA2).csv"), header = TRUE)
+
+# select variables of interest based on listed outputs
+varList <- read.csv(paste0(rootDir, "variableNames_v3.csv"), header = TRUE)
+
+# select the polygons (Kaituna region boundaries)
+pathShapeFile <- paste0(rootDir, "lowerKaitunabnd(WGS84).shp")
 
 selectedVars_df <- varList %>%
   filter(include == "yes")
@@ -59,10 +66,9 @@ allData <- allData %>%
 
 
 # Load polygon maps for 'Kaituna' catchment
-pathShapeFile <- 'C:/apsim_dev/Projects/CCII/GIS_layers/CaseStudy/lowerKaitunabnd(WGS84).shp'
+# pathShapeFile <- 'C:/apsim_dev/Projects/CCII/GIS_layers/CaseStudy/lowerKaitunabnd(WGS84).shp'
 sf2 <- readShapeSpatial(pathShapeFile, proj4string = CRS("+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"))
 # sf2 <- gSimplify(sf2,tol=.01,topologyPreserve = TRUE)
-
 
 
 #-------------------------------------------------------------------
@@ -76,7 +82,14 @@ ui <- fluidPage(
   
   # Side panel details
   sidebarPanel(width = 3,
-               selectInput('mainvar', 'Select the output variable:', fullNames, selected = numVarNames[20]),
+               
+             #  fileInput("file1", 'Choose the path to input data:'),
+             h4(tags$b("Select input data folder:")),
+             shinyDirButton('directory', 'Folder select', 'Please select a folder'), # FIXME: not yet working 
+               
+               tags$hr(),
+             
+               selectInput('mainvar', 'Select the output variable:', fullNames, selected = numVarNames[17]),
                
                # Show selection
                textOutput("text1"),
@@ -88,7 +101,7 @@ ui <- fluidPage(
                         h4(tags$b("Refence")),
                         selectInput('gcm', 'GCM #1', as.character(unique(allData$thisGCM)),selected = as.character(unique(allData$thisGCM))[[2]]),
                         selectInput('rcp', 'Climate #1', as.character(unique(allData$thisRCP)),selected = as.character(unique(allData$thisRCP))[[1]]),
-                        selectInput('scn', 'Time #1', as.character(unique(allData$thisScenario)),selected = as.character(unique(allData$thisScenario))[[1]]),
+                        selectInput('scn', 'Time #1', as.character(unique(allData$thisScenario)),selected = as.character(unique(allData$thisScenario))[[3]]),
                         selectInput('crop', 'Crop #1', as.character(unique(allData$thisCrop))),
                         selectInput('cult', 'Cultivar #1', as.character(unique(allData$thisCultivar))),
                         selectInput('soil', 'Soil #1 ', as.character(unique(allData$thisSoil)))
@@ -281,8 +294,17 @@ ui <- fluidPage(
 #-------------------------- THE SERVER -----------------------------------------------------
 #-------------------------------------------------------------------------------------------
 
-server <- function(input, output) {
+server <- function(input, output, session) {
   
+  
+  # selection of path to input data
+  
+  # first attempt with shinyDir
+  volumes <- choose.dir(default = "", caption = "Select folder")
+  shinyDirChoose(input, 'directory', updateFreq = 2000, roots=volumes, session=session, restrictions=system.file(package='base'))
+  output$directorypath <- renderPrint({parseDirPath(volumes, input$directory)})
+  
+
   # Function to select stat type
   statTypeFunc <- function(x, type) {
     switch(type,
