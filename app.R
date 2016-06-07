@@ -85,7 +85,7 @@ ui <- fluidPage(
                
              #  fileInput("file1", 'Choose the path to input data:'),
              h4(tags$b("Select input data folder:")),
-             shinyDirButton('directory', 'Folder select', 'Please select a folder'), # FIXME: not yet working 
+             shinyDirButton('directory', 'Folder select', 'Please select a folder'),
                
                tags$hr(),
              
@@ -297,14 +297,19 @@ ui <- fluidPage(
 server <- function(input, output, session) {
   
   
-  # selection of path to input data
+  # selection of path to input data # FIXME: Frrezes app after selection is made
+#  volumes <- getVolumes() # c('R Installation'= R.home())
+#  shinyDirChoose(input, 'directory', updateFreq = 2000, roots=volumes, session=session, restrictions=system.file(package='base'))
+#
+#  output$directorypath <- renderPrint({parseDirPath(volumes, input$directory)})
+#  
+# thisPath <- reactive({
+#    if(is.null(parseDirPath(volumes, input$directory))) {return(NULL)}
+#    
+#    return(parseDirPath(volumes, input$directory) )
+#    
+#  })
   
-  # first attempt with shinyDir
-  volumes <- choose.dir(default = "", caption = "Select folder")
-  shinyDirChoose(input, 'directory', updateFreq = 2000, roots=volumes, session=session, restrictions=system.file(package='base'))
-  output$directorypath <- renderPrint({parseDirPath(volumes, input$directory)})
-  
-
   # Function to select stat type
   statTypeFunc <- function(x, type) {
     switch(type,
