@@ -476,7 +476,7 @@ server <- function(input, output, session) {
       summarise_each(funs(mean,cvFunc)) %>%
       dplyr::select(thisLat, thisLong, thisVar = statSelection())
    
- #  validate(need(nrow(r)>0,'Scenario not available. Please select again.'))
+   validate(need(nrow(r)>0,'Scenario not available. Please select again.'))
    
     return(r)
     
@@ -491,7 +491,7 @@ server <- function(input, output, session) {
       summarise_each(funs(mean,cvFunc)) %>%
       dplyr::select(thisLat, thisLong, thisVar = statSelection())
       
-   #   validate(need(nrow(r)>0,'Scenario not available. Please select again.'))
+      validate(need(nrow(r)>0,'Scenario not available. Please select again.'))
       
     return(r)
     
@@ -570,7 +570,7 @@ server <- function(input, output, session) {
     
     x <- c(lat.slc,lng.slc)
     
-   # validate(need(!is.null(x),'Select pixel')) # FIXME: message at open: replacement has 1 row, data has 0
+    # validate(need(!is.null(x),'Select pixel')) # FIXME: message at open: replacement has 1 row, data has 0
     
     return(x)
     
@@ -669,7 +669,7 @@ server <- function(input, output, session) {
     r <- raster(spg)
     proj4string(r) <- "+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"
     
-    validate(need(nrow(r)>0,'Scenario not available. Please select again.'))
+   # validate(need(nrow(r)>0,'Scenario not available. Please select again.'))
     
     return(r)
   })
@@ -683,7 +683,7 @@ server <- function(input, output, session) {
     r <- raster(spg)
     proj4string(r) <- "+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"
     
-    validate(need(nrow(r)>0,'Scenario not available. Please select again.'))
+   # validate(need(nrow(r)>0,'Scenario not available. Please select again.'))
     
     return(r)
   })
@@ -697,7 +697,7 @@ server <- function(input, output, session) {
     r <- raster(spg)
     proj4string(r) <- "+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"
     
-    validate(need(nrow(r)>0,'Scenario not available. Please select again.'))
+   # validate(need(nrow(r)>0,'Scenario not available. Please select again.'))
     
     return(r)
   })
