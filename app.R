@@ -20,6 +20,9 @@ library(gplots)
 library(htmltools)
 #install.packages('raster', repos = 'http://r-forge.r-project.org/', type = 'source') # using new raster lib
 
+# trying to sr=et this to avoid ggplot crash
+#options(expressions=5000)
+
 # for debbuging
 DEBUG <- F
 if(DEBUG == T){
@@ -429,7 +432,7 @@ server <- function(input, output, session) {
           thisScenario == scn
       )
     
-    validate(need(nrow(bf)>0,'Empty dataframe'))
+    validate(need(nrow(bf)>0,'Scenario not available. Please select again.'))
     
     return(bf)
     
@@ -455,7 +458,7 @@ server <- function(input, output, session) {
           thisScenario == scn2
       )
     
-    validate(need(nrow(bf)>0,'Empty dataframe'))
+    validate(need(nrow(bf)>0,'Scenario not available. Please select again.'))
     
     return(bf)
     
@@ -473,7 +476,7 @@ server <- function(input, output, session) {
       summarise_each(funs(mean,cvFunc)) %>%
       dplyr::select(thisLat, thisLong, thisVar = statSelection())
    
- #  validate(need(nrow(r)>0,'Empty dataframe'))
+ #  validate(need(nrow(r)>0,'Scenario not available. Please select again.'))
    
     return(r)
     
@@ -488,7 +491,7 @@ server <- function(input, output, session) {
       summarise_each(funs(mean,cvFunc)) %>%
       dplyr::select(thisLat, thisLong, thisVar = statSelection())
       
-   #   validate(need(nrow(r)>0,'Empty dataframe'))
+   #   validate(need(nrow(r)>0,'Scenario not available. Please select again.'))
       
     return(r)
     
@@ -516,7 +519,7 @@ server <- function(input, output, session) {
     df_diff <- df_diff %>%
       dplyr::select(thisLat,thisLong, thisVar)
     
-   # validate(need(nrow(df_diff)>0,'Empty dataframe'))
+   # validate(need(nrow(df_diff)>0,'Scenario not available. Please select again.'))
     
     return(df_diff)
     
@@ -530,7 +533,7 @@ server <- function(input, output, session) {
     
   bf <- df_Base()[, c(input$xcol, mainVarSelec())] # filter only? FIXME: can yo graph directly from df_BAse?
   
- # validate(need(nrow(bf)>0,'Empty dataframe'))
+ # validate(need(nrow(bf)>0,'Scenario not available. Please select again.'))
   
   return(bf)
 
@@ -541,7 +544,7 @@ server <- function(input, output, session) {
     
     bf <- df_Alt()[, c(input$xcol, mainVarSelec())]
     
-   # validate(need(nrow(bf)>0,'Empty dataframe'))
+   # validate(need(nrow(bf)>0,'Scenario not available. Please select again.'))
     
     return(bf)
     
@@ -591,7 +594,7 @@ server <- function(input, output, session) {
       filter(thisLat == lat &
              thisLong == lng)
     
-   # validate(need(nrow(bf)>0,'Empty dataframe'))
+   # validate(need(nrow(bf)>0,'Scenario not available. Please select again.'))
 
     bf[, c(input$xcol, mainVarSelec())]
     
@@ -615,7 +618,7 @@ server <- function(input, output, session) {
       filter(thisLat == lat &
              thisLong == lng)
     
-   # validate(need(nrow(bf)>0,'Empty dataframe'))
+   # validate(need(nrow(bf)>0,'Scenario not available. Please select again.'))
     
     bf[, c(input$xcol, mainVarSelec())]
     
@@ -666,7 +669,7 @@ server <- function(input, output, session) {
     r <- raster(spg)
     proj4string(r) <- "+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"
     
-    validate(need(nrow(r)>0,'Empty dataframe'))
+    validate(need(nrow(r)>0,'Scenario not available. Please select again.'))
     
     return(r)
   })
@@ -680,7 +683,7 @@ server <- function(input, output, session) {
     r <- raster(spg)
     proj4string(r) <- "+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"
     
-    validate(need(nrow(r)>0,'Empty dataframe'))
+    validate(need(nrow(r)>0,'Scenario not available. Please select again.'))
     
     return(r)
   })
@@ -694,7 +697,7 @@ server <- function(input, output, session) {
     r <- raster(spg)
     proj4string(r) <- "+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"
     
-    validate(need(nrow(r)>0,'Empty dataframe'))
+    validate(need(nrow(r)>0,'Scenario not available. Please select again.'))
     
     return(r)
   })
