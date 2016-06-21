@@ -922,9 +922,9 @@ server <- function(input, output, session) {
   #    return(NULL)
     
     df_bas <- selectedData_Base() # FIXME: repeated code: make it single
-    df_bas$scn <- "base"
+    df_bas$scn <- "Reference"
     df_alt <- selectedData_Alt()
-    df_alt$scn <- "alt"
+    df_alt$scn <- "Alternative"
     df_merge <- rbind(df_bas,df_alt)
     
     # FIXME: this has to select CV when stat option is ticked
@@ -950,9 +950,9 @@ server <- function(input, output, session) {
       return(NULL)
     
     df_bas <- selectedDataPix_Base() # FIXME: repeated code: make it single
-    df_bas$scn <- "base"
+    df_bas$scn <- "Reference"
     df_alt <- selectedDataPix_Alt()
-    df_alt$scn <- "alt"
+    df_alt$scn <- "Alternative"
     df_merge <- rbind(df_bas,df_alt)
     
     # FIXME: this has to select CV when stat option is ticked
@@ -976,9 +976,9 @@ server <- function(input, output, session) {
       return(NULL)
     
     df_bas <- selectedData_Base() # FIXME: repeated code: make it single
-    df_bas$scn <- "base"
+    df_bas$scn <- "Reference"
     df_alt <- selectedData_Alt()
-    df_alt$scn <- "alt"
+    df_alt$scn <- "Alternative"
     df_merge <- rbind(df_bas,df_alt)
     
     df_merge %>%
@@ -999,9 +999,9 @@ server <- function(input, output, session) {
       return(NULL)
     
     df_bas <- selectedData_Base() # FIXME: repeated code: make it single
-    df_bas$scn <- "base"
+    df_bas$scn <- "Reference"
     df_alt <- selectedData_Alt()
-    df_alt$scn <- "alt"
+    df_alt$scn <- "Alternative"
     df_merge <- rbind(df_bas,df_alt)
     
     df_merge %>%
@@ -1022,9 +1022,9 @@ server <- function(input, output, session) {
       return(NULL)
     
     df_bas <- selectedData_Base() # FIXME: repeated code: make it single
-    df_bas$scn <- "base"
+    df_bas$scn <- "Reference"
     df_alt <- selectedData_Alt()
-    df_alt$scn <- "alt"
+    df_alt$scn <- "Alternative"
     df_merge <- rbind(df_bas,df_alt)
     
     df_merge %>%
