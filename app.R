@@ -353,8 +353,10 @@ server <- function(input, output, session) {
   
   # Name of selected variable in original file. Converts "selected" name to name in "raw" data
   mainVarSelec <- reactive({ # aims to substiture most varNames
-    buf <-  selectedVars_df %>%
+   
+     buf <-  selectedVars_df %>%
       filter(fullName == as.character(input$mainvar))
+    
     as.character(buf$variable) # returns var name in raw data
     
   })
@@ -389,6 +391,17 @@ server <- function(input, output, session) {
     clickComp <- input$comp
     x <- ifelse(clickComp == "abs", "abs", "rel") # FIXME: this is selected by hand now, make it smarter later
     x
+  })
+  
+  # select X axes variable in factor analysis
+  # Name of selected variable in original file. Converts "selected" name to name in "raw" data
+  xAxesVarSelec <- reactive({ # aims to substiture most varNames
+    
+    buf <-  selectedVars_df %>%
+      filter(fullName == as.character(input$xcol))
+    
+    as.character(buf$variable) # returns var name in raw data
+    
   })
   
   
@@ -900,13 +913,13 @@ server <- function(input, output, session) {
   # diff of rasters
   output$plot11 <- renderPlot({ 
     
-    if(nrow(selectedData_Base()) == 0 |
-       nrow(selectedData_Alt()) == 0
-    )  {return(NULL) }
+  #  if(nrow(selectedData_Base()) == 0 |  # FIXME: check if these are needed now that we have validate
+  #     nrow(selectedData_Alt()) == 0
+  #  )  {return(NULL) }
     
     
-    if (is.character(selectedData_Base()))
-      return(NULL)
+  #  if (is.character(selectedData_Base()))
+  #    return(NULL)
     
     df_bas <- selectedData_Base() # FIXME: repeated code: make it single
     df_bas$scn <- "base"
@@ -919,6 +932,7 @@ server <- function(input, output, session) {
       ggplot(aes_string(mainVarSelec()), aes(..count..)) + 
       geom_density(aes(colour = as.factor(scn),fill = as.factor(scn)), size = 2, alpha = 0.5) +
       theme(legend.position = c(.2, .8),text = element_text(size=20)) +
+      theme(legend.title=element_blank()) +
       # scale_colour_brewer(name = "Scenario", ) +
       # ggtitle(as.character(input$mainvar)) +
       #   guides(fill = guide_legend(keywidth = 2, keyheight = 2)) +
@@ -946,6 +960,7 @@ server <- function(input, output, session) {
       ggplot(aes_string(mainVarSelec()), aes(..count..)) + 
       geom_density(aes(colour = as.factor(scn),fill = as.factor(scn)), size = 2, alpha = 0.5) +
       theme(legend.position = c(.2, .8),text = element_text(size=20)) +
+      theme(legend.title=element_blank()) +
       # scale_colour_brewer(name = "Scenario", ) +
       # ggtitle(as.character(input$mainvar)) +
       scale_x_continuous(name=paste0(as.character(input$mainvar)," (",as.character(varUnits()),")"))
@@ -970,6 +985,7 @@ server <- function(input, output, session) {
       ggplot(aes_string(x=input$xcol, y=mainVarSelec())) + 
       geom_point(aes(colour = as.factor(scn)), size = 3) +
       geom_smooth(aes(colour = as.factor(scn)))+
+      theme(legend.title=element_blank()) +
       theme(legend.position = c(.2, .8),text = element_text(size=20)) 
     #  scale_x_continuous(name=paste0(as.character(?)," (",as.character(varUnits()),")")) FIXME: need a new var name and unit as render
     # theme(legend.position = c(0.1, 0.8), text = element_text(size=20))
@@ -990,8 +1006,9 @@ server <- function(input, output, session) {
     
     df_merge %>%
       ggplot(aes_string(mainVarSelec())) + 
-      geom_density(aes( fill = as.factor(scn), alpha= 0.5, colour = as.factor(scn))) + # , fill = as.factor(scn),  alpha = 0.5
+      geom_density(aes( fill = as.factor(scn), colour = as.factor(scn)), alpha= 0.5) + # , fill = as.factor(scn),  alpha = 0.5
       theme(legend.position = c(.2, .8),text = element_text(size=20)) +
+      theme(legend.title=element_blank()) +
       #  ggtitle(as.character(input$mainvar)) +
       scale_x_continuous(name=paste0(as.character(input$mainvar)," (",as.character(varUnits()),")"))
     # theme(legend.position = c(0.1, 0.8), text = element_text(size=20))
@@ -1012,7 +1029,8 @@ server <- function(input, output, session) {
     
     df_merge %>%
       ggplot(aes_string(input$xcol)) + 
-      geom_density(aes(fill = as.factor(scn), alpha= 0.5, colour = as.factor(scn))) + # order of factors matter
+      geom_density(aes(fill = as.factor(scn), colour = as.factor(scn)), alpha= 0.5) + # order of factors matter
+      theme(legend.title=element_blank()) +
       theme(legend.position = c(.2, .8),text = element_text(size=20)) # +
     #  ggtitle(as.character(input$xcol)) 
     # theme(legend.position = c(0.1, 0.8), text = element_text(size=20))
@@ -1049,7 +1067,7 @@ server <- function(input, output, session) {
       
       
    #   df <- data.frame(lat = rasterDF_Diff()$thisLat, lon = rasterDF_Diff()$thisLong, Difference = rasterDF_Diff()$thisVar)
-       df <- data.frame(lat = datasetInput()$thisLat, lon = datasetInput()$thisLong, Difference = datasetInput()$thisVar)
+       df <- data.frame(lat = datasetInput()$thisLat, lon = datasetInput()$thisLong, PixelValue = datasetInput()$thisVar)
       
       if(input$fileType == "txt") {
         
