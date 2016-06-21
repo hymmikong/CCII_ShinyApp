@@ -61,7 +61,7 @@ numVarNames <- as.character(numVars_df$fullName)
 
 # Customise data (FIXME: this should be done earlier in raw dataset)
 allData <- allData %>%
- subset(thisGCM != "ERA") %>%
+# subset(thisGCM != "ERA") %>%
   mutate(Lat_Long = paste0(thisLat,"_",thisLong))
 
 
@@ -100,7 +100,7 @@ ui <- fluidPage(
                  column(5,
                         h4(tags$b("Refence")),
                         selectInput('gcm', 'GCM #1', as.character(unique(allData$thisGCM)),selected = as.character(unique(allData$thisGCM))[[2]]),
-                        selectInput('rcp', 'Climate #1', as.character(unique(allData$thisRCP)),selected = as.character(unique(allData$thisRCP))[[1]]),
+                        selectInput('rcp', 'Climate #1', as.character(unique(allData$thisRCP)),selected = as.character(unique(allData$thisRCP))[[2]]),
                         selectInput('scn', 'Time #1', as.character(unique(allData$thisScenario)),selected = as.character(unique(allData$thisScenario))[[3]]),
                         selectInput('crop', 'Crop #1', as.character(unique(allData$thisCrop))),
                         selectInput('cult', 'Cultivar #1', as.character(unique(allData$thisCultivar))),
@@ -110,7 +110,7 @@ ui <- fluidPage(
                  column(5,
                         h4(tags$b("Alternative")),
                         selectInput('gcm2','GCM #2', as.character(unique(allData$thisGCM)),selected = as.character(unique(allData$thisGCM))[[2]]),
-                        selectInput('rcp2', 'Climate #2', as.character(unique(allData$thisRCP)),selected = as.character(unique(allData$thisRCP))[[1]]),
+                        selectInput('rcp2', 'Climate #2', as.character(unique(allData$thisRCP)),selected = as.character(unique(allData$thisRCP))[[2]]),
                         selectInput('scn2', 'Time #2', as.character(unique(allData$thisScenario)),selected = as.character(unique(allData$thisScenario))[[1]]),
                         selectInput('crop2', 'Crop #2', as.character(unique(allData$thisCrop))),
                         selectInput('cult2', 'Cultivar #2', as.character(unique(allData$thisCultivar))),
@@ -254,6 +254,7 @@ ui <- fluidPage(
                p(),
                p(),
                selectInput('xcol', 'Select driving variable (X axes)', names(allData),selected = names(allData)[[12]]),
+             #  selectInput('xcol', 'Select driving variable (X axes)', fullNames, selected =  numVarNames[17]),
                p(),
                h4(tags$b("Relationship between selected variables")),
                p(),
@@ -459,6 +460,8 @@ server <- function(input, output, session) {
       summarise_each(funs(mean,cvFunc)) %>%
       dplyr::select(thisLat, thisLong, thisVar = statSelection())
    
+   validate(need(nrow(r)>0,'Empty dataframe'))
+   
     return(r)
     
   })
@@ -551,6 +554,8 @@ server <- function(input, output, session) {
     
     x <- c(lat.slc,lng.slc)
     
+    validate(need(!is.null(x),'Select pixel')) # FIXME: message at open: replacement has 1 row, data has 0
+    
     return(x)
     
   })
@@ -573,7 +578,7 @@ server <- function(input, output, session) {
       filter(thisLat == lat &
              thisLong == lng)
     
-    validate(need(nrow(bf)>0,'Empty dataframe'))
+   # validate(need(nrow(bf)>0,'Empty dataframe'))
 
     bf[, c(input$xcol, mainVarSelec())]
     
@@ -597,7 +602,7 @@ server <- function(input, output, session) {
       filter(thisLat == lat &
              thisLong == lng)
     
-    validate(need(nrow(bf)>0,'Empty dataframe'))
+   # validate(need(nrow(bf)>0,'Empty dataframe'))
     
     bf[, c(input$xcol, mainVarSelec())]
     
@@ -648,7 +653,9 @@ server <- function(input, output, session) {
     r <- raster(spg)
     proj4string(r) <- "+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"
     
-    r
+    validate(need(nrow(r)>0,'Empty dataframe'))
+    
+    return(r)
   })
   
   
@@ -659,7 +666,10 @@ server <- function(input, output, session) {
     gridded(spg) <- TRUE
     r <- raster(spg)
     proj4string(r) <- "+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"
-    r
+    
+    validate(need(nrow(r)>0,'Empty dataframe'))
+    
+    return(r)
   })
   
   # Diff raster
@@ -670,7 +680,10 @@ server <- function(input, output, session) {
     gridded(spg) <- TRUE
     r <- raster(spg)
     proj4string(r) <- "+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"
-    r
+    
+    validate(need(nrow(r)>0,'Empty dataframe'))
+    
+    return(r)
   })
   
   ################################
