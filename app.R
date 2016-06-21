@@ -299,17 +299,17 @@ server <- function(input, output, session) {
   
   
   # selection of path to input data # FIXME: Frrezes app after selection is made
-#  volumes <- getVolumes() # c('R Installation'= R.home())
-#  shinyDirChoose(input, 'directory', updateFreq = 2000, roots=volumes, session=session, restrictions=system.file(package='base'))
-#
-#  output$directorypath <- renderPrint({parseDirPath(volumes, input$directory)})
-#  
-# thisPath <- reactive({
-#    if(is.null(parseDirPath(volumes, input$directory))) {return(NULL)}
-#    
-#    return(parseDirPath(volumes, input$directory) )
-#    
-#  })
+ #  volumes <- getVolumes() # c('R Installation'= R.home())
+ #  shinyDirChoose(input, 'directory', updateFreq = 2000, roots=volumes, session=session, restrictions=system.file(package='base'))
+ # 
+ #  output$directorypath <- renderPrint({parseDirPath(volumes, input$directory)})
+ #  
+ # thisPath <- reactive({
+ #    if(is.null(parseDirPath(volumes, input$directory))) {return(NULL)}
+ #    
+ #    return(parseDirPath(volumes, input$directory) )
+ #    
+ #  })
   
   # Function to select stat type
   statTypeFunc <- function(x, type) {
@@ -473,7 +473,7 @@ server <- function(input, output, session) {
       summarise_each(funs(mean,cvFunc)) %>%
       dplyr::select(thisLat, thisLong, thisVar = statSelection())
    
-   validate(need(nrow(r)>0,'Empty dataframe'))
+ #  validate(need(nrow(r)>0,'Empty dataframe'))
    
     return(r)
     
@@ -488,7 +488,7 @@ server <- function(input, output, session) {
       summarise_each(funs(mean,cvFunc)) %>%
       dplyr::select(thisLat, thisLong, thisVar = statSelection())
       
-      validate(need(nrow(r)>0,'Empty dataframe'))
+   #   validate(need(nrow(r)>0,'Empty dataframe'))
       
     return(r)
     
@@ -516,7 +516,7 @@ server <- function(input, output, session) {
     df_diff <- df_diff %>%
       dplyr::select(thisLat,thisLong, thisVar)
     
-    validate(need(nrow(df_diff)>0,'Empty dataframe'))
+   # validate(need(nrow(df_diff)>0,'Empty dataframe'))
     
     return(df_diff)
     
@@ -530,7 +530,7 @@ server <- function(input, output, session) {
     
   bf <- df_Base()[, c(input$xcol, mainVarSelec())] # filter only? FIXME: can yo graph directly from df_BAse?
   
-  validate(need(nrow(bf)>0,'Empty dataframe'))
+ # validate(need(nrow(bf)>0,'Empty dataframe'))
   
   return(bf)
 
@@ -541,7 +541,7 @@ server <- function(input, output, session) {
     
     bf <- df_Alt()[, c(input$xcol, mainVarSelec())]
     
-    validate(need(nrow(bf)>0,'Empty dataframe'))
+   # validate(need(nrow(bf)>0,'Empty dataframe'))
     
     return(bf)
     
@@ -567,7 +567,7 @@ server <- function(input, output, session) {
     
     x <- c(lat.slc,lng.slc)
     
-    validate(need(!is.null(x),'Select pixel')) # FIXME: message at open: replacement has 1 row, data has 0
+   # validate(need(!is.null(x),'Select pixel')) # FIXME: message at open: replacement has 1 row, data has 0
     
     return(x)
     
