@@ -98,7 +98,7 @@ ui <- fluidPage(
                h4(tags$b("Construct scenarios:")),
                fluidRow(
                  column(5,
-                        h4(tags$b("Refence")),
+                        h4(tags$b("Reference")),
                         selectInput('gcm', 'GCM #1', as.character(unique(allData$thisGCM)),selected = as.character(unique(allData$thisGCM))[[2]]),
                         selectInput('rcp', 'Climate #1', as.character(unique(allData$thisRCP)),selected = as.character(unique(allData$thisRCP))[[2]]),
                         selectInput('scn', 'Time #1', as.character(unique(allData$thisScenario)),selected = as.character(unique(allData$thisScenario))[[3]]),
