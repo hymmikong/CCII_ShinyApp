@@ -283,8 +283,8 @@ ui <- fluidPage(
                  )
                ),
                
-               p(),
-               numericInput('clusters', 'Cluster count', 3, min = 1, max = 9)
+               p() #,
+         #      numericInput('clusters', 'Cluster count', 3, min = 1, max = 9)
                
                
                #    selectInput('symFacet', 'Select factor for symbols', names(allData),selected = names(allData)[[12]])
@@ -560,13 +560,13 @@ server <- function(input, output, session) {
     lng <-  as.numeric(as.character(input$basemap4_click$lng))
     
      if(is.null(lat)| is.null(lng)) {
-       lat <- -37.925
+       lat <- -37.725 # FIXME: this should bring a preselected graph ... not working
        lng <- 176.275
      } else {
        lat <- lat
        lng <- lng
      }
-    
+      
     lat.vec <- sort(as.numeric(unique(allData$thisLat)))
     lng.vec <- sort(as.numeric(unique(allData$thisLong)))
     
@@ -579,7 +579,7 @@ server <- function(input, output, session) {
     
     x <- c(lat.slc,lng.slc)
     
-    # validate(need(!is.null(x),'Select pixel')) # FIXME: message at open: replacement has 1 row, data has 0
+   # validate(need(!is.null(x),'Select pixel')) # FIXME: message at open: replacement has 1 row, data has 0
     
     return(x)
     
@@ -638,13 +638,13 @@ server <- function(input, output, session) {
   
   # Cluster analysis --------------------------------------------------
   
-  clusters <- reactive({
-    kmeans(selectedData_Base(), input$clusters)
-  })
-  
-  cluster_Alt <- reactive({
-    kmeans(selectedData_Alt(), input$clusters)
-  })
+  # clusters <- reactive({
+  #   kmeans(selectedData_Base(), input$clusters)
+  # })
+  # 
+  # cluster_Alt <- reactive({
+  #   kmeans(selectedData_Alt(), input$clusters)
+  # })
   
  ##############################################################
  # --------- RASTERISE DFs -------------------FIXME: Not fully working yet
@@ -943,7 +943,7 @@ server <- function(input, output, session) {
     df_merge %>%
       ggplot(aes_string(mainVarSelec()), aes(..count..)) + 
       geom_density(aes(colour = as.factor(scn),fill = as.factor(scn)), size = 2, alpha = 0.5) +
-      theme(legend.position = c(.2, .8),text = element_text(size=20)) +
+      theme(legend.position = c(.1, .8),text = element_text(size=20)) +
       theme(legend.title=element_blank()) +
       # scale_colour_brewer(name = "Scenario", ) +
       # ggtitle(as.character(input$mainvar)) +
@@ -958,8 +958,8 @@ server <- function(input, output, session) {
   # within selected single pixel data
   output$plot3 <- renderPlot({ 
     
-    if (is.character(selectedDataPix_Base()))
-      return(NULL)
+  #  if (is.character(selectedDataPix_Base()))
+  #    return(NULL)
     
     df_bas <- selectedDataPix_Base() # FIXME: repeated code: make it single
     df_bas$scn <- "Reference"
@@ -971,7 +971,7 @@ server <- function(input, output, session) {
     df_merge %>%
       ggplot(aes_string(mainVarSelec()), aes(..count..)) + 
       geom_density(aes(colour = as.factor(scn),fill = as.factor(scn)), size = 2, alpha = 0.5) +
-      theme(legend.position = c(.2, .8),text = element_text(size=20)) +
+      theme(legend.position = c(.1, .8),text = element_text(size=20)) +
       theme(legend.title=element_blank()) +
       # scale_colour_brewer(name = "Scenario", ) +
       # ggtitle(as.character(input$mainvar)) +
@@ -998,7 +998,7 @@ server <- function(input, output, session) {
       geom_point(aes(colour = as.factor(scn)), size = 3) +
       geom_smooth(aes(colour = as.factor(scn)))+
       theme(legend.title=element_blank()) +
-      theme(legend.position = c(.2, .8),text = element_text(size=20)) 
+      theme(legend.position = c(.1, .8),text = element_text(size=20)) 
     #  scale_x_continuous(name=paste0(as.character(?)," (",as.character(varUnits()),")")) FIXME: need a new var name and unit as render
     # theme(legend.position = c(0.1, 0.8), text = element_text(size=20))
     
@@ -1019,7 +1019,7 @@ server <- function(input, output, session) {
     df_merge %>%
       ggplot(aes_string(mainVarSelec())) + 
       geom_density(aes( fill = as.factor(scn), colour = as.factor(scn)), alpha= 0.5) + # , fill = as.factor(scn),  alpha = 0.5
-      theme(legend.position = c(.2, .8),text = element_text(size=20)) +
+      theme(legend.position = c(.1, .8),text = element_text(size=20)) +
       theme(legend.title=element_blank()) +
       #  ggtitle(as.character(input$mainvar)) +
       scale_x_continuous(name=paste0(as.character(input$mainvar)," (",as.character(varUnits()),")"))
@@ -1043,7 +1043,7 @@ server <- function(input, output, session) {
       ggplot(aes_string(input$xcol)) + 
       geom_density(aes(fill = as.factor(scn), colour = as.factor(scn)), alpha= 0.5) + # order of factors matter
       theme(legend.title=element_blank()) +
-      theme(legend.position = c(.2, .8),text = element_text(size=20)) # +
+      theme(legend.position = c(.1, .8),text = element_text(size=20)) # +
     #  ggtitle(as.character(input$xcol)) 
     # theme(legend.position = c(0.1, 0.8), text = element_text(size=20))
     
