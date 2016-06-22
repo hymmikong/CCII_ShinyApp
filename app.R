@@ -99,6 +99,7 @@ ui <- fluidPage(
                
                # Show selection
                textOutput("text1"),
+               textOutput("text3"),
                
                tags$hr(),
                h4(tags$b("Construct scenarios:")),
@@ -261,8 +262,8 @@ ui <- fluidPage(
                #    h4(tags$b("Relationship between output variables")),
                p(),
                p(),
-               selectInput('xcol', 'Select driving variable (X axes)', names(allData),selected = names(allData)[[12]]),
-             #  selectInput('xcol', 'Select driving variable (X axes)', fullNames, selected =  numVarNames[17]),
+             #  selectInput('xcol', 'Select driving variable (X axes)', names(allData),selected = names(allData)[[12]]),
+               selectInput('xcol', 'Select driving variable (X axes)', fullNames, selected =  numVarNames[17]),
                p(),
                h4(tags$b("Relationship between selected variables")),
                p(),
@@ -535,7 +536,7 @@ server <- function(input, output, session) {
   # select full (all years) dataset of selected variable (i.e. Y axes, the variable rasterised)
   selectedData_Base <- reactive({
     
-  bf <- df_Base()[, c(input$xcol, mainVarSelec())] # filter only? FIXME: can yo graph directly from df_BAse?
+  bf <- df_Base()[, c(xAxesVarSelec(), mainVarSelec())] # filter only? FIXME: can yo graph directly from df_BAse?
   
  # validate(need(nrow(bf)>0,'Scenario not available. Please select again.'))
   
@@ -546,7 +547,7 @@ server <- function(input, output, session) {
   # select driving variable for graph (X axes)
   selectedData_Alt <- reactive({
     
-    bf <- df_Alt()[, c(input$xcol, mainVarSelec())]
+    bf <- df_Alt()[, c(xAxesVarSelec(), mainVarSelec())]
     
    # validate(need(nrow(bf)>0,'Scenario not available. Please select again.'))
     
@@ -609,7 +610,7 @@ server <- function(input, output, session) {
     
    # validate(need(nrow(bf)>0,'Scenario not available. Please select again.'))
 
-    bf[, c(input$xcol, mainVarSelec())]
+    bf[, c(xAxesVarSelec(), mainVarSelec())]
     
 
   })
@@ -633,7 +634,7 @@ server <- function(input, output, session) {
     
    # validate(need(nrow(bf)>0,'Scenario not available. Please select again.'))
     
-    bf[, c(input$xcol, mainVarSelec())]
+    bf[, c(xAxesVarSelec(), mainVarSelec())]
     
 
   })
@@ -923,7 +924,7 @@ server <- function(input, output, session) {
   
   
   output$text3 <- renderText({ 
-    as.numeric(as.character(xAxesVarSelec()))
+    ifelse(is.null(xAxesVarSelec()),"Select var",xAxesVarSelec())
     })
   
   
@@ -1003,7 +1004,7 @@ server <- function(input, output, session) {
     df_merge <- rbind(df_bas,df_alt)
     
     df_merge %>%
-      ggplot(aes_string(x=input$xcol, y=mainVarSelec())) + 
+      ggplot(aes_string(x=xAxesVarSelec(), y=mainVarSelec())) + 
       geom_point(aes(colour = as.factor(scn)), size = 3) +
       geom_smooth(aes(colour = as.factor(scn)))+
       theme(legend.title=element_blank()) +
@@ -1049,7 +1050,7 @@ server <- function(input, output, session) {
     df_merge <- rbind(df_bas,df_alt)
     
     df_merge %>%
-      ggplot(aes_string(input$xcol)) + 
+      ggplot(aes_string(xAxesVarSelec())) + 
       geom_density(aes(fill = as.factor(scn), colour = as.factor(scn)), alpha= 0.5) + # order of factors matter
       theme(legend.title=element_blank()) +
       theme(legend.position = c(.1, .8),text = element_text(size=20)) # +
