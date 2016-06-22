@@ -236,12 +236,14 @@ ui <- fluidPage(
                #    h4(tags$b("Graphs show the distribution of 20 year simulations within a grid-cell")),
                p(),
                #     selectInput('gc', 'Grid cell', as.character(unique(allData$Lat_Long))),
-               h5(tags$b("Click in the location of interest")),
+               h4(tags$b(textOutput("text2")),align = "center"),
+               tags$hr(),
+               h4(tags$b("Click in the location of interest")),
                p(),
                leafletOutput("basemap4"),
                p(),
                # h4(tags$b(textOutput("text2")),align = "center"), # lat/long
-               p(),
+               tags$hr(),
                h4(tags$b("Inter-annual variability in selected pixel")),
                p(),
                plotOutput("plot3"),
@@ -918,6 +920,11 @@ server <- function(input, output, session) {
     paste0("Selected grid-cell has Latitude: ", lat.slc," Longitude: " ,lng.slc)
     
   }) 
+  
+  
+  output$text3 <- renderText({ 
+    as.numeric(as.character(xAxesVarSelec()))
+    })
   
   
   #############################################################
