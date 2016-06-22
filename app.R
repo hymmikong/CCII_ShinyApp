@@ -99,7 +99,7 @@ ui <- fluidPage(
                
                # Show selection
                textOutput("text1"),
-               textOutput("text3"),
+            #   textOutput("text3"), # test only
                
                tags$hr(),
                h4(tags$b("Construct scenarios:")),
@@ -274,8 +274,7 @@ ui <- fluidPage(
                #   plotOutput("plot2"),
                p(),
                #     selectInput('colFacet', 'Select factor for colour', names(allData),selected = names(allData)[[12]]),
-               p(),
-               
+               tags$hr(),
                
                fluidRow(
                  column(6,
@@ -378,6 +377,16 @@ server <- function(input, output, session) {
     # as.character(varDetails[,"unit"]) 
     
     ifelse(clickStats == "av",as.character(varDetails[,"unit"]), "CV%")
+    
+  })
+  
+  # Units of selected variable
+  varUnits2 <- reactive({
+
+    varDetails <-  selectedVars_df %>%
+      filter(variable == xAxesVarSelec())
+
+    as.character(varDetails[,"unit"])
     
   })
   
@@ -1008,9 +1017,10 @@ server <- function(input, output, session) {
       geom_point(aes(colour = as.factor(scn)), size = 3) +
       geom_smooth(aes(colour = as.factor(scn)))+
       theme(legend.title=element_blank()) +
-      theme(legend.position = c(.1, .8),text = element_text(size=20)) 
-    #  scale_x_continuous(name=paste0(as.character(?)," (",as.character(varUnits()),")")) FIXME: need a new var name and unit as render
-    # theme(legend.position = c(0.1, 0.8), text = element_text(size=20))
+      theme(legend.position = c(.1, .8),text = element_text(size=20))  +
+      scale_x_continuous(name=paste0(as.character(input$xcol)," (",as.character(varUnits2()),")")) +
+      scale_y_continuous(name=paste0(as.character(input$mainvar)," (",as.character(varUnits()),")"))
+    
     
   })
   
@@ -1053,9 +1063,8 @@ server <- function(input, output, session) {
       ggplot(aes_string(xAxesVarSelec())) + 
       geom_density(aes(fill = as.factor(scn), colour = as.factor(scn)), alpha= 0.5) + # order of factors matter
       theme(legend.title=element_blank()) +
-      theme(legend.position = c(.1, .8),text = element_text(size=20)) # +
-    #  ggtitle(as.character(input$xcol)) 
-    # theme(legend.position = c(0.1, 0.8), text = element_text(size=20))
+      theme(legend.position = c(.1, .8),text = element_text(size=20)) +
+      scale_x_continuous(name=paste0(as.character(input$xcol)," (",as.character(varUnits2()),")"))
     
   })
   
