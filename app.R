@@ -87,8 +87,11 @@ ui <- fluidPage(
   sidebarPanel(width = 3,
                
              #  fileInput("file1", 'Choose the path to input data:'),
+             
              h4(tags$b("Select input data folder:")),
              shinyDirButton('directory', 'Folder select', 'Please select a folder'),
+             p(),
+             verbatimTextOutput('directorypath'),
                
                tags$hr(),
              
@@ -104,7 +107,7 @@ ui <- fluidPage(
                         h4(tags$b("Reference")),
                         selectInput('gcm', 'GCM #1', as.character(unique(allData$thisGCM)),selected = as.character(unique(allData$thisGCM))[[2]]),
                         selectInput('rcp', 'Climate #1', as.character(unique(allData$thisRCP)),selected = as.character(unique(allData$thisRCP))[[2]]),
-                        selectInput('scn', 'Time #1', as.character(unique(allData$thisScenario)),selected = as.character(unique(allData$thisScenario))[[3]]),
+                        selectInput('scn', 'Time #1', as.character(unique(allData$thisScenario)),selected = as.character(unique(allData$thisScenario))[[1]]),
                         selectInput('crop', 'Crop #1', as.character(unique(allData$thisCrop))),
                         selectInput('cult', 'Cultivar #1', as.character(unique(allData$thisCultivar))),
                         selectInput('soil', 'Soil #1 ', as.character(unique(allData$thisSoil)))
@@ -114,7 +117,7 @@ ui <- fluidPage(
                         h4(tags$b("Alternative")),
                         selectInput('gcm2','GCM #2', as.character(unique(allData$thisGCM)),selected = as.character(unique(allData$thisGCM))[[2]]),
                         selectInput('rcp2', 'Climate #2', as.character(unique(allData$thisRCP)),selected = as.character(unique(allData$thisRCP))[[2]]),
-                        selectInput('scn2', 'Time #2', as.character(unique(allData$thisScenario)),selected = as.character(unique(allData$thisScenario))[[1]]),
+                        selectInput('scn2', 'Time #2', as.character(unique(allData$thisScenario)),selected = as.character(unique(allData$thisScenario))[[3]]),
                         selectInput('crop2', 'Crop #2', as.character(unique(allData$thisCrop))),
                         selectInput('cult2', 'Cultivar #2', as.character(unique(allData$thisCultivar))),
                         selectInput('soil2', 'Soil #2', as.character(unique(allData$thisSoil)))
@@ -289,7 +292,6 @@ ui <- fluidPage(
                
                #    selectInput('symFacet', 'Select factor for symbols', names(allData),selected = names(allData)[[12]])
       )
-      
     )
   )
 )
@@ -301,19 +303,19 @@ ui <- fluidPage(
 server <- function(input, output, session) {
   
   
-  # selection of path to input data # FIXME: Frrezes app after selection is made
- #  volumes <- getVolumes() # c('R Installation'= R.home())
- #  shinyDirChoose(input, 'directory', updateFreq = 2000, roots=volumes, session=session, restrictions=system.file(package='base'))
- # 
- #  output$directorypath <- renderPrint({parseDirPath(volumes, input$directory)})
- #  
- # thisPath <- reactive({
- #    if(is.null(parseDirPath(volumes, input$directory))) {return(NULL)}
- #    
- #    return(parseDirPath(volumes, input$directory) )
- #    
- #  })
+  # selection of path to input data # FIXME: Not showing dir structure and freezes the App after clicking
+  volumes <- getVolumes()
+  shinyDirChoose(input, 'directory', updateFreq = 2000, roots=volumes, session=session, restrictions=system.file(package='base'))
+  output$directorypath <- renderPrint({parseDirPath(volumes, input$directory)})
   
+  thisPath <- reactive({
+    if(is.null(parseDirPath(volumes, input$directory))) {return(NULL)}
+    
+    return( parseDirPath(volumes, input$directory) )
+    
+  })
+  
+
   # Function to select stat type
   statTypeFunc <- function(x, type) {
     switch(type,
