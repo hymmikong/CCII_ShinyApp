@@ -555,8 +555,17 @@ server <- function(input, output, session) {
   
   # select lat / long approximate coordinates by click
   coordSelectBaseMap4 <- reactive({
+    
     lat <-  as.numeric(as.character(input$basemap4_click$lat))
     lng <-  as.numeric(as.character(input$basemap4_click$lng))
+    
+     if(is.null(lat)| is.null(lng)) {
+       lat <- -37.925
+       lng <- 176.275
+     } else {
+       lat <- lat
+       lng <- lng
+     }
     
     lat.vec <- sort(as.numeric(unique(allData$thisLat)))
     lng.vec <- sort(as.numeric(unique(allData$thisLong)))
@@ -581,13 +590,13 @@ server <- function(input, output, session) {
   selectedDataPix_Base <- reactive({
     
     # values before click # FIXME: not working yet: need to start from selected map
-    if(is.null(as.numeric(coordSelectBaseMap4()))) {
-      lat <- -37.925
-      lng <- 176.275
-    } else {
+    # if(is.null(as.numeric(coordSelectBaseMap4()))) {
+    #   lat <- -37.925
+    #   lng <- 176.275
+    # } else {
       lat <- coordSelectBaseMap4()[1]
       lng <- coordSelectBaseMap4()[2]
-    }
+    # }
     
     # trim to selected coordinates FIXME: Untested
     bf <- df_Base() %>%
@@ -605,13 +614,13 @@ server <- function(input, output, session) {
   selectedDataPix_Alt <- reactive({
     
     # values before click # FIXME: not working yet
-    if(is.null(as.numeric(coordSelectBaseMap4()))) {
-      lat <- -37.925
-      lng <- 176.275
-    } else {
+    # if(is.null(as.numeric(coordSelectBaseMap4()))) {
+    #   lat <- -37.925
+    #   lng <- 176.275
+    # } else {
       lat <- coordSelectBaseMap4()[1]
       lng <- coordSelectBaseMap4()[2]
-    }
+    # }
 
     # trim to selected coordinates FIXME: Untested
     bf <- df_Alt() %>%
