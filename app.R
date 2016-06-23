@@ -85,13 +85,19 @@ ui <- fluidPage(
   
   # Side panel details
   sidebarPanel(width = 3,
-               
              #  fileInput("file1", 'Choose the path to input data:'),
-             
-             h4(tags$b("Select input data folder:")),
-             shinyDirButton('directory', 'Folder select', 'Please select a folder'),
+             #     shinyDirButton('directory', 'Folder select', 'Please select a folder'),
              p(),
-             verbatimTextOutput('directorypath'),
+             # fileInput('file1', 'Choose CSV File',
+             #           accept=c('text/csv', 
+             #                    'text/comma-separated-values,text/plain', 
+             #                    '.csv')),
+             actionButton("uploadDataButtom", "Refresh Raw Data"),
+             textInput("pathData", label = h4("Raw data directory"), value = "e.g. C:\\myData\\"),
+            # textOutput("pathData"),
+         
+             p(),
+             # verbatimTextOutput('directorypath'),
                
                tags$hr(),
              
@@ -306,18 +312,22 @@ server <- function(input, output, session) {
   
   
   # selection of path to input data # FIXME: Not showing dir structure and freezes the App after clicking
-  volumes <- getVolumes()
-  shinyDirChoose(input, 'directory', updateFreq = 2000, roots=volumes, session=session, restrictions=system.file(package='base'))
-  output$directorypath <- renderPrint({parseDirPath(volumes, input$directory)})
+  # volumes <- getVolumes()
+  # shinyDirChoose(input, 'directory', updateFreq = 2000, roots=volumes, session=session, restrictions=system.file(package='base'))
+  # output$directorypath <- renderPrint({parseDirPath(volumes, input$directory)})
+  # 
+  # thisPath <- reactive({
+  #   if(is.null(parseDirPath(volumes, input$directory))) {return(NULL)}
+  #   
+  #   return( parseDirPath(volumes, input$directory) )
+  #   
+  # })
   
-  thisPath <- reactive({
-    if(is.null(parseDirPath(volumes, input$directory))) {return(NULL)}
-    
-    return( parseDirPath(volumes, input$directory) )
-    
+  # Input file directory FIXME: Not used ... not sure how to upload and refresh large datasets (see above)
+  output$pathData <- renderText({
+    input$pathData
   })
   
-
   # Function to select stat type
   statTypeFunc <- function(x, type) {
     switch(type,
@@ -986,10 +996,10 @@ server <- function(input, output, session) {
     df_alt$scn <- "Alternative"
     df_merge <- rbind(df_bas,df_alt)
     
-    # FIXME: this has to select CV when stat option is ticked
     df_merge %>%
       ggplot(aes_string(mainVarSelec()), aes(..count..)) + 
       geom_density(aes(colour = as.factor(scn),fill = as.factor(scn)), size = 2, alpha = 0.5) +
+   #   geom_boxplot(aes(colour = as.factor(scn),fill = as.factor(scn)), size = 2, alpha = 0.5) +
       theme(legend.position = c(.1, .8),text = element_text(size=20)) +
       theme(legend.title=element_blank()) +
       # scale_colour_brewer(name = "Scenario", ) +
