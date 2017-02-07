@@ -33,7 +33,10 @@ if(DEBUG == T){
 rootDir <- "C:\\GitHubRepos\\CCII_ShinyApp\\data\\"
 
 # select root directory (where all data will sit)
-allData <- read.csv(paste0(rootDir, "AllData(RA2).csv"), header = TRUE)
+# allData <- read.csv(paste0(rootDir, "AllData(RA2).csv"), header = TRUE)
+allData <- read.csv(paste0(rootDir, "Data_RA2_spinUp.csv"), header = TRUE)
+#allData <- read.csv(paste0(rootDir, "Data_RA3_spinUp.csv"), header = TRUE)
+#allData <- read.csv(paste0(rootDir, "DataFormatTest.csv"), header = TRUE)
 
 # select variables of interest based on listed outputs
 varList <- read.csv(paste0(rootDir, "variableNames_v3.csv"), header = TRUE)
@@ -111,9 +114,9 @@ ui <- fluidPage(
                h4(tags$b("Construct scenarios:")),
                fluidRow(
                  column(5,
-                        h4(tags$b("Reference")),
-                        selectInput('gcm', 'GCM #1', as.character(unique(allData$thisGCM)),selected = as.character(unique(allData$thisGCM))[[2]]),
-                        selectInput('rcp', 'Climate #1', as.character(unique(allData$thisRCP)),selected = as.character(unique(allData$thisRCP))[[2]]),
+                        h4(tags$b("Reference")), # Check: if selected levels not available then do not open?
+                        selectInput('gcm', 'GCM #1', as.character(unique(allData$thisGCM)),selected = as.character(unique(allData$thisGCM))[[1]]),
+                        selectInput('rcp', 'Climate #1', as.character(unique(allData$thisRCP)),selected = as.character(unique(allData$thisRCP))[[1]]),
                         selectInput('scn', 'Time #1', as.character(unique(allData$thisScenario)),selected = as.character(unique(allData$thisScenario))[[1]]),
                         selectInput('crop', 'Crop #1', as.character(unique(allData$thisCrop))),
                         selectInput('cult', 'Cultivar #1', as.character(unique(allData$thisCultivar))),
@@ -122,9 +125,9 @@ ui <- fluidPage(
                  ),
                  column(5,
                         h4(tags$b("Alternative")),
-                        selectInput('gcm2','GCM #2', as.character(unique(allData$thisGCM)),selected = as.character(unique(allData$thisGCM))[[2]]),
-                        selectInput('rcp2', 'Climate #2', as.character(unique(allData$thisRCP)),selected = as.character(unique(allData$thisRCP))[[2]]),
-                        selectInput('scn2', 'Time #2', as.character(unique(allData$thisScenario)),selected = as.character(unique(allData$thisScenario))[[3]]),
+                        selectInput('gcm2','GCM #2', as.character(unique(allData$thisGCM)),selected = as.character(unique(allData$thisGCM))[[1]]),
+                        selectInput('rcp2', 'Climate #2', as.character(unique(allData$thisRCP)),selected = as.character(unique(allData$thisRCP))[[1]]),
+                        selectInput('scn2', 'Time #2', as.character(unique(allData$thisScenario)),selected = as.character(unique(allData$thisScenario))[[1]]),
                         selectInput('crop2', 'Crop #2', as.character(unique(allData$thisCrop))),
                         selectInput('cult2', 'Cultivar #2', as.character(unique(allData$thisCultivar))),
                         selectInput('soil2', 'Soil #2', as.character(unique(allData$thisSoil)))
@@ -1091,12 +1094,32 @@ server <- function(input, output, session) {
            "dl_dif" = rasterDF_Diff())
   })
   
+  # raster
+  rasterInput <- reactive({
+    switch(input$fileToDownload,
+           "dl_ref" = base_rasterLayer(),
+           "dl_alt" = alt_rasterLayer(),
+           "dl_dif" = diff_rasterLayer())
+  })
   
   output$downloadData <- downloadHandler(
     
     # ext <- ifelse(input$fileType == "txt",".txt",".tif"),
     
-    filename = function() { paste(input$mainvar, input$fileType, sep=".") },
+  #  filename = function() { paste(input$mainvar, input$fileType, sep=".") },
+    
+    filename = function() { paste0(input$mainvar,"_(", 
+                                   input$rcp,"_", 
+                                   input$rcp2,")_(", 
+                                   input$gcm,"_", 
+                                   input$gcm2,")_(", 
+                                   input$scn,"_", 
+                                   input$scn2,")_",
+                                   input$fileToDownload,"_(", 
+                                   input$stats,")_(", 
+                                   input$comp,")_",
+                                   input$crop,".", 
+                                   input$fileType) },
     
     #  filename = function() {paste0(input$mainvar,"_",input$compSelection,"_",input$statSelection,".",input$fileType) },
     
@@ -1121,7 +1144,8 @@ server <- function(input, output, session) {
       } else {
         
         # save as raster
-        r <- diff_rasterLayer()
+       # r <- diff_rasterLayer()
+       r <- rasterInput()
         proj4string(r) <- "+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"
         
         res <- writeRaster(r, filename=file, format="GTiff", overwrite=TRUE)
