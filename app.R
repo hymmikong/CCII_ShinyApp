@@ -1094,7 +1094,7 @@ server <- function(input, output, session) {
            "dl_dif" = rasterDF_Diff())
   })
   
-  # raster
+  # raster selection
   rasterInput <- reactive({
     switch(input$fileToDownload,
            "dl_ref" = base_rasterLayer(),
