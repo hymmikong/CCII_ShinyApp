@@ -18,6 +18,7 @@ library(rgdal)
 library(sp)
 library(gplots)
 library(htmltools)
+
 #install.packages('raster', repos = 'http://r-forge.r-project.org/', type = 'source') # using new raster lib
 
 # trying to sr=et this to avoid ggplot crash
