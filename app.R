@@ -33,6 +33,13 @@ if(DEBUG == T){
 # select directory with raw data
 rootDir <- "C:\\GitHubRepos\\CCII_ShinyApp\\data\\"
 
+## set rootDir if we are on powerplant
+if("HOSTNAME" %in% names(Sys.getenv()) && (
+  grepl('aklpps13',Sys.getenv()[["HOSTNAME"]]) || 
+  grepl('aklppr31',Sys.getenv()[["HOSTNAME"]]) )) {
+  rootDir <- "data/"
+}
+
 # select root directory (where all data will sit)
 # allData <- read.csv(paste0(rootDir, "AllData(RA2).csv"), header = TRUE)
 allData <- read.csv(paste0(rootDir, "Data_RA2_spinUp.csv"), header = TRUE)
