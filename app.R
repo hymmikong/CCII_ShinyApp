@@ -5,16 +5,16 @@
 
 # load libraries (FIXME: delete the ones not used anymore)
 library(shiny)
-library(shinyFiles)
+# library(shinyFiles)
 library(dplyr)
 library(ggplot2)
 library(leaflet)
 library(raster)
 library(ggvis)
 library(maptools)
-library(rgeos)
+# library(rgeos)
 library(maps)
-library(rgdal)
+# library(rgdal)
 library(sp)
 library(gplots)
 library(htmltools)
@@ -31,7 +31,8 @@ if(DEBUG == T){
 }
 
 # select directory with raw data
-rootDir <- "C:\\GitHubRepos\\CCII_ShinyApp\\data\\"
+# rootDir <- "C:\\GitHubRepos\\CCII_ShinyApp\\data\\"
+rootDir <- "data/"
 
 ## set rootDir if we are on powerplant
 if("HOSTNAME" %in% names(Sys.getenv()) && (
